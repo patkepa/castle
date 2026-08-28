@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
+  createHashRouter,
   RouterProvider,
   useRouteError,
 } from "react-router-dom";
@@ -50,13 +51,16 @@ function RoutedCastleApp() {
   );
 }
 
-const castleRouter = createBrowserRouter([
+const castleRoutes = [
   {
     path: "*",
     element: <RoutedCastleApp />,
     errorElement: <CastleRouteError />,
   },
-]);
+];
+const castleRouter = import.meta.env.VITE_CASTLE_ROUTER === "hash"
+  ? createHashRouter(castleRoutes)
+  : createBrowserRouter(castleRoutes);
 
 function CastleRouteError() {
   const routeError = useRouteError();

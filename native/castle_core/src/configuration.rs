@@ -87,7 +87,7 @@ pub fn load_castle_configuration(search_root: &Path) -> Result<CastleConfigurati
     Ok(CastleConfiguration {
         application_name: required_text(application.name, "Castle"),
         application_bundle_id: required_text(application.bundle_id, "app.castle.desktop"),
-        library_path: resolve_path(configuration_root, library.path, "example_library"),
+        library_path: resolve_path(configuration_root, library.path, "examples/library"),
         repository_path: resolve_path(configuration_root, library.repository_path, "."),
         owner_note_id,
         owner_display_name: required_text(owner.display_name, "Owner"),

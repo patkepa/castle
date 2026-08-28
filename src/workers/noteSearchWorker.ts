@@ -67,7 +67,9 @@ async function search(message: SearchMessage) {
 
 function loadPreparedIndex() {
   if (preparedIndex) return Promise.resolve(preparedIndex);
-  indexRequest ??= fetch("/generated/search-index.json", { cache: "no-cache" })
+  indexRequest ??= fetch(`${import.meta.env.BASE_URL}generated/search-index.json`, {
+    cache: "no-cache",
+  })
     .then(async (response) => {
       if (!response.ok) throw new Error(`Search index returned ${response.status}`);
       const value: unknown = await response.json();

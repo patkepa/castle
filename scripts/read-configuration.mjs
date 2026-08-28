@@ -6,7 +6,7 @@ const defaults = Object.freeze({
   schemaVersion: 1,
   applicationName: "Castle",
   applicationBundleId: "app.castle.desktop",
-  libraryPath: "example_library",
+  libraryPath: "examples/library",
   repositoryPath: ".",
   ownerNoteId: "",
   ownerDisplayName: "Owner",

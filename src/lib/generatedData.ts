@@ -60,7 +60,8 @@ export async function fetchGeneratedJson<T>(
     resourceRequests.delete(path);
     resourceRequests.set(path, existing);
   }
-  const request = existing ?? fetchImpl(path).then(async (response) => {
+  const requestPath = fetchImpl === fetch ? resolveCastlePublicPath(path) : path;
+  const request = existing ?? fetchImpl(requestPath).then(async (response) => {
     if (!response.ok) throw new Error(`${label} returned ${response.status}`);
     const value: unknown = await response.json();
     validate(value);
@@ -82,6 +83,12 @@ export async function fetchGeneratedJson<T>(
     }
   }
   return request as Promise<T>;
+}
+
+export function resolveCastlePublicPath(path: string) {
+  if (!path.startsWith("/") || path.startsWith("//")) return path;
+  const baseUrl = import.meta.env?.BASE_URL ?? "/";
+  return baseUrl === "/" ? path : `${baseUrl}${path.slice(1)}`;
 }
 
 export function invalidateGeneratedResource(path: string) {

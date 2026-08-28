@@ -8,7 +8,7 @@ out/
 .env.*
 !.env.example
 CONFIGURATION.local.md
-example_library/.castle/
+examples/library/.castle/
 public/assets/
 public/content-assets/
 public/generated/

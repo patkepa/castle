@@ -18,5 +18,9 @@ export function resolveCastleRuntimeIconPath({
 }) {
   return isPackaged
     ? path.join(resourcesPath, castleIconFileName)
-    : path.resolve(mainBundleDirectory, "../../assets", castleIconFileName);
+    : path.resolve(
+        mainBundleDirectory,
+        "../../resources/app-icons",
+        castleIconFileName,
+      );
 }

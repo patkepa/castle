@@ -21,10 +21,10 @@
     "dev": "npm run generate && vite --host 127.0.0.1",
     "dev:web": "npm run dev",
     "dev:desktop": "npm run generate && electron-forge start",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json && tsc -p tsconfig.electron.json",
+    "typecheck": "tsc --noEmit && tsc -p config/typescript/scripts.json && tsc -p config/typescript/electron.json",
     "check:architecture": "node scripts/check-architecture.mjs",
     "format:check": "cargo fmt --manifest-path native/Cargo.toml --all --check",
-    "lint:web": "npm run check:architecture && eslint --max-warnings=0 src electron scripts test *.ts",
+    "lint:web": "npm run check:architecture && eslint --max-warnings=0 src electron scripts test config vite.config.ts",
     "lint:native": "cargo clippy --manifest-path native/Cargo.toml --workspace --all-targets -- -D warnings",
     "lint": "npm run lint:web && npm run lint:native",
     "build": "npm run check:person-locations && npm run generate:contracts && npm run generate:content && npm run generate:icons && tsc --noEmit && vite build",
@@ -77,6 +77,6 @@
     "wrangler": "4.127.1"
   },
   "config": {
-    "forge": "./forge_config.ts"
+    "forge": "./config/electron/forge.config.ts"
   }
 }
