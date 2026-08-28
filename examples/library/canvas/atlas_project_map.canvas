@@ -1,0 +1,179 @@
+{
+  "nodes": [
+    {
+      "id": "group-research",
+      "type": "group",
+      "x": -760,
+      "y": -300,
+      "width": 620,
+      "height": 690,
+      "label": "Research",
+      "color": "5"
+    },
+    {
+      "id": "group-delivery",
+      "type": "group",
+      "x": 160,
+      "y": -300,
+      "width": 620,
+      "height": 690,
+      "label": "Make and share",
+      "color": "4"
+    },
+    {
+      "id": "node-question",
+      "type": "text",
+      "x": -700,
+      "y": -220,
+      "width": 260,
+      "height": 180,
+      "color": "5",
+      "text": "# Guiding question\n\nWhat helps someone feel invited to participate in a neighborhood?"
+    },
+    {
+      "id": "node-research-plan",
+      "type": "file",
+      "x": -700,
+      "y": 40,
+      "width": 260,
+      "height": 220,
+      "color": "3",
+      "file": "projects/neighborhood_atlas/research_plan.md"
+    },
+    {
+      "id": "node-third-places",
+      "type": "file",
+      "x": -380,
+      "y": 40,
+      "width": 180,
+      "height": 220,
+      "file": "notes/research/third_places.md",
+      "subpath": "#signals-for-fieldwork"
+    },
+    {
+      "id": "node-project",
+      "type": "file",
+      "x": -80,
+      "y": -120,
+      "width": 300,
+      "height": 240,
+      "color": "4",
+      "file": "projects/neighborhood_atlas/neighborhood_atlas.md"
+    },
+    {
+      "id": "node-principles",
+      "type": "file",
+      "x": 230,
+      "y": -220,
+      "width": 230,
+      "height": 210,
+      "color": "2",
+      "file": "notes/design_principles.md"
+    },
+    {
+      "id": "node-open-studio",
+      "type": "file",
+      "x": 490,
+      "y": -220,
+      "width": 230,
+      "height": 210,
+      "color": "4",
+      "file": "events/2026/atlas_open_studio.md"
+    },
+    {
+      "id": "node-next",
+      "type": "text",
+      "x": 230,
+      "y": 100,
+      "width": 490,
+      "height": 190,
+      "color": "6",
+      "text": "## Next checkpoint\n\nSynthesize interviews → test the visual language → invite critique → revise the data dictionary"
+    },
+    {
+      "id": "node-json-canvas",
+      "type": "link",
+      "x": -80,
+      "y": 220,
+      "width": 300,
+      "height": 120,
+      "url": "https://jsoncanvas.org/"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-question-plan",
+      "fromNode": "node-question",
+      "fromSide": "bottom",
+      "toNode": "node-research-plan",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "shapes"
+    },
+    {
+      "id": "edge-plan-research",
+      "fromNode": "node-research-plan",
+      "fromSide": "right",
+      "toNode": "node-third-places",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "uses"
+    },
+    {
+      "id": "edge-research-project",
+      "fromNode": "node-third-places",
+      "fromSide": "right",
+      "toNode": "node-project",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "color": "5",
+      "label": "informs"
+    },
+    {
+      "id": "edge-project-principles",
+      "fromNode": "node-project",
+      "fromSide": "right",
+      "toNode": "node-principles",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "guided by"
+    },
+    {
+      "id": "edge-principles-event",
+      "fromNode": "node-principles",
+      "fromSide": "right",
+      "toNode": "node-open-studio",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "color": "4",
+      "label": "tested at"
+    },
+    {
+      "id": "edge-project-next",
+      "fromNode": "node-project",
+      "fromSide": "bottom",
+      "toNode": "node-next",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "color": "6"
+    },
+    {
+      "id": "edge-event-next",
+      "fromNode": "node-open-studio",
+      "fromSide": "bottom",
+      "toNode": "node-next",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "feedback"
+    },
+    {
+      "id": "edge-project-format",
+      "fromNode": "node-project",
+      "fromSide": "bottom",
+      "toNode": "node-json-canvas",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "portable format"
+    }
+  ]
+}
