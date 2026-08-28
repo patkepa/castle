@@ -11,6 +11,7 @@ import { TaskBrowser } from "../src/features/tasks/TaskBrowser.tsx";
 import { TaskKanban } from "../src/features/tasks/TaskKanban.tsx";
 import { TaskInspector } from "../src/features/tasks/TaskInspector.tsx";
 import { CalendarTimeGrid } from "../src/features/calendar/CalendarTimeGrid.tsx";
+import { CalendarPage } from "../src/features/calendar/CalendarPage.tsx";
 import { CalendarEventEditor } from "../src/features/calendar/CalendarEventEditor.tsx";
 import { emptyCalendarEventFormValues } from "../src/features/calendar/calendarEventMarkdown.ts";
 import { TaskViewToggle } from "../src/features/tasks/TaskViewToggle.tsx";
@@ -20,7 +21,9 @@ import { CastlePlatformProvider } from "../src/platform/castle_platform_provider
 import { webCastlePlatform } from "../src/platform/web_castle_platform.ts";
 import { CastleContextMenuProvider } from "../src/features/context_menu/CastleContextMenu.tsx";
 import { CanvasEditor } from "../src/features/canvas/CanvasEditor.tsx";
+import { CanvasPage } from "../src/features/canvas/CanvasPage.tsx";
 import {
+  SheetsPage,
   SheetsManager,
   SpreadsheetPanel,
 } from "../src/features/sheets/SheetsPage.tsx";
@@ -163,6 +166,28 @@ test("renders a Cloudflare canvas snapshot without editing controls", () => {
   assert.doesNotMatch(markup, /aria-label="Save canvas"/);
   assert.doesNotMatch(markup, />Edit</);
   assert.doesNotMatch(markup, />Preview</);
+});
+
+test("omits local Canvas and Sheets editor controls from the static page", () => {
+  const previousWindow = globalThis.window;
+  globalThis.window = {};
+  try {
+    const canvasMarkup = render(createElement(CanvasPage, {
+      notes: [],
+      onOpenNote: () => {},
+    }));
+    const sheetsMarkup = render(createElement(SheetsPage));
+
+    assert.doesNotMatch(canvasMarkup, /Open local \.canvas/);
+    assert.doesNotMatch(canvasMarkup, /Create local canvas/);
+    assert.doesNotMatch(canvasMarkup, /accept="\.canvas/);
+    assert.doesNotMatch(sheetsMarkup, /Open local \.ods/);
+    assert.doesNotMatch(sheetsMarkup, /Open \.ods/);
+    assert.doesNotMatch(sheetsMarkup, /accept="\.ods/);
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
 });
 
 test("renders an autosaving canvas without save or mode chrome", () => {
@@ -356,9 +381,23 @@ test("renders calendar events and scheduled tasks in the same time grid", () => 
   assert.match(markup, /Task · 45 min/);
 });
 
-test("renders the complete event editor form and desktop read-only notice", () => {
+test("omits calendar creation controls from the static page", () => {
+  const markup = render(createElement(CalendarPage, {
+    events: [projectEvent],
+    tasks: [personalTask],
+    projects: [project],
+    people: [],
+  }));
+
+  assert.match(markup, /Week schedule/);
+  assert.doesNotMatch(markup, /New event/);
+  assert.doesNotMatch(markup, /Add event on/);
+  assert.doesNotMatch(markup, /calendar-grid-slot[^>]*<\/button>/);
+});
+
+test("renders event details without mutation controls on the static page", () => {
   const markup = render(createElement(CalendarEventEditor, {
-    mode: "create",
+    mode: "edit",
     initialValues: {
       ...emptyCalendarEventFormValues("2026-08-03", "09:30"),
       title: "Work on Castle",
@@ -373,13 +412,16 @@ test("renders the complete event editor form and desktop read-only notice", () =
     onSave: async () => false,
   }));
 
-  assert.match(markup, /New event/);
+  assert.doesNotMatch(markup, /New event/);
+  assert.match(markup, /Event details/);
   assert.match(markup, /Work on Castle/);
   assert.match(markup, /End date/);
   assert.match(markup, /Kind/);
   assert.match(markup, /Project/);
   assert.match(markup, /Description/);
   assert.match(markup, /Open this library in the Castle desktop app/);
+  assert.doesNotMatch(markup, /Delete event/);
+  assert.doesNotMatch(markup, /Save changes/);
 });
 
 test("renders the Projects list-and-inspector workspace from generated records", () => {
@@ -423,6 +465,10 @@ test("renders the default Personal task browser and inspector workspace", () => 
   assert.doesNotMatch(markup, />Current group</);
   assert.equal(markup.match(/class="task-pane-count"/g)?.length, 1);
   assert.doesNotMatch(markup, /Implement Castle Records/);
+  assert.doesNotMatch(markup, /aria-label="Create project"/);
+  assert.doesNotMatch(markup, /aria-label="Create task"/);
+  assert.doesNotMatch(markup, /aria-label="Add task group"/);
+  assert.doesNotMatch(markup, /draggable="true"/);
 });
 
 test("orders task projects with saved positions while keeping new projects visible", () => {

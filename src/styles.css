@@ -1644,6 +1644,13 @@ a {
   width: 100%;
 }
 
+/* The shared Menu primitive has a 180px minimum width. Without resetting it,
+ * compact items center their icons outside the sidebar's 60px viewport. */
+.app-sidebar.collapsed .sidebar-menu {
+  min-width: 0;
+  width: 100%;
+}
+
 /* MenuDivider is a list item. In compact navigation it sits between menu
  * containers, so suppress the browser's otherwise-visible list marker. */
 .app-sidebar.collapsed .nav-group > .bp6-menu-divider {

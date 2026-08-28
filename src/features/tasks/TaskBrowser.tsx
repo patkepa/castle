@@ -208,7 +208,11 @@ export function TaskBrowser({
             }}
           />
         )) : (
-          <TaskBrowserEmpty filtered={filtered} onClearFilters={onClearFilters} />
+          <TaskBrowserEmpty
+            canCreate={canCreate}
+            filtered={filtered}
+            onClearFilters={onClearFilters}
+          />
         )}
       </div>
 
@@ -272,16 +276,17 @@ export function TaskPaneFooter({
           ))}
         </div>
       </details>
-      <button
-        type="button"
-        className="task-pane-add"
-        aria-label="Create task"
-        disabled={!canCreate}
-        title={canCreate ? "Create task" : "Task creation is available in the desktop app"}
-        onClick={onNewTask}
-      >
-        <Icon icon="small-plus" size={15} aria-hidden="true" />
-      </button>
+      {canCreate ? (
+        <button
+          type="button"
+          className="task-pane-add"
+          aria-label="Create task"
+          title="Create task"
+          onClick={onNewTask}
+        >
+          <Icon icon="small-plus" size={15} aria-hidden="true" />
+        </button>
+      ) : null}
     </footer>
   );
 }
@@ -394,9 +399,11 @@ function TaskBrowserRow({
 }
 
 function TaskBrowserEmpty({
+  canCreate,
   filtered,
   onClearFilters,
 }: {
+  canCreate: boolean;
   filtered: boolean;
   onClearFilters: () => void;
 }) {
@@ -407,7 +414,9 @@ function TaskBrowserEmpty({
       <span>
         {filtered
           ? "Try another search, group, or status."
-          : "Use the + button to add the first task."}
+          : canCreate
+            ? "Use the + button to add the first task."
+            : "Task records will appear here automatically."}
       </span>
       {filtered ? (
         <button type="button" onClick={onClearFilters}>

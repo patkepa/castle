@@ -52,13 +52,26 @@ export function CalendarEventEditor({
 
   return (
     <aside
-      aria-label={mode === "create" ? "New event" : `Edit ${values.title}`}
+      aria-label={mode === "create"
+        ? "New event"
+        : canEdit
+          ? `Edit ${values.title}`
+          : `${values.title} event details`}
       className="calendar-event-editor"
     >
       <header className="calendar-event-editor-header">
         <div>
-          <Icon icon={mode === "create" ? "plus" : "edit"} aria-hidden="true" />
-          <h2>{mode === "create" ? "New event" : "Edit event"}</h2>
+          <Icon
+            icon={mode === "create" ? "plus" : canEdit ? "edit" : "calendar"}
+            aria-hidden="true"
+          />
+          <h2>
+            {mode === "create"
+              ? "New event"
+              : canEdit
+                ? "Edit event"
+                : "Event details"}
+          </h2>
         </div>
         <button
           aria-label="Close event editor"
@@ -88,7 +101,7 @@ export function CalendarEventEditor({
           <label className="calendar-form-field calendar-form-field--wide">
             <span>Title</span>
             <input
-              autoFocus
+              autoFocus={canEdit}
               disabled={disabled}
               placeholder="Event title"
               value={values.title}
@@ -276,31 +289,35 @@ export function CalendarEventEditor({
           </label>
         </div>
 
-        <footer className="calendar-event-form-footer">
-          {mode === "edit" && onDelete ? (
-            <button
-              className="calendar-delete-event"
-              disabled={busy || !canDelete}
-              onClick={() => void onDelete()}
-              type="button"
-            >
-              <Icon icon="trash" aria-hidden="true" />
-              Delete event
-            </button>
-          ) : <span />}
-          <button
-            className="calendar-save-event"
-            disabled={disabled}
-            type="submit"
-          >
-            <Icon icon="floppy-disk" aria-hidden="true" />
-            {busy
-              ? "Saving…"
-              : mode === "create"
-                ? "Create event"
-                : "Save changes"}
-          </button>
-        </footer>
+        {canEdit || (mode === "edit" && onDelete && canDelete) ? (
+          <footer className="calendar-event-form-footer">
+            {mode === "edit" && onDelete && canDelete ? (
+              <button
+                className="calendar-delete-event"
+                disabled={busy}
+                onClick={() => void onDelete()}
+                type="button"
+              >
+                <Icon icon="trash" aria-hidden="true" />
+                Delete event
+              </button>
+            ) : <span />}
+            {canEdit ? (
+              <button
+                className="calendar-save-event"
+                disabled={disabled}
+                type="submit"
+              >
+                <Icon icon="floppy-disk" aria-hidden="true" />
+                {busy
+                  ? "Saving…"
+                  : mode === "create"
+                    ? "Create event"
+                    : "Save changes"}
+              </button>
+            ) : null}
+          </footer>
+        ) : null}
       </form>
     </aside>
   );

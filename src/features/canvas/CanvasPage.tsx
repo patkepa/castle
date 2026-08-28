@@ -241,13 +241,15 @@ export function CanvasPage({
 
   return (
     <main className="canvas-page" aria-label="Canvas">
-      <input
-        ref={fileInputRef}
-        className="sr-only"
-        type="file"
-        accept=".canvas,application/json"
-        onChange={handleLocalFile}
-      />
+      {bridge ? (
+        <input
+          ref={fileInputRef}
+          className="sr-only"
+          type="file"
+          accept=".canvas,application/json"
+          onChange={handleLocalFile}
+        />
+      ) : null}
       <CanvasLibraryRail
         activePath={activeCanvas?.file.relativePath ?? ""}
         canvases={canvases}
@@ -403,10 +405,12 @@ function CanvasLibraryRail({
           </p>
         ) : null}
       </div>
-      <button className="canvas-open-local" type="button" onClick={onOpenLocal}>
-        <Icon icon="folder-open" aria-hidden="true" />
-        Open local .canvas
-      </button>
+      {desktopAvailable ? (
+        <button className="canvas-open-local" type="button" onClick={onOpenLocal}>
+          <Icon icon="folder-open" aria-hidden="true" />
+          Open local .canvas
+        </button>
+      ) : null}
     </aside>
   );
 }
@@ -428,15 +432,14 @@ function CanvasWelcome({
         <Icon icon={loading ? "refresh" : "grid-view"} size={28} />
       </div>
       <h1>{loading ? "Reading your canvases…" : "Map ideas in open space"}</h1>
-      <p>
-        Create text, note, link, and group cards, then connect them in the open
-        JSON Canvas format used by Obsidian.
-      </p>
-      {!loading ? (
+      <p>{desktopAvailable
+        ? "Create text, note, link, and group cards, then connect them in the open JSON Canvas format used by Obsidian."
+        : "Published library canvases will appear here as read-only snapshots."}</p>
+      {!loading && desktopAvailable ? (
         <div>
           <button type="button" onClick={onCreate}>
             <Icon icon="plus" aria-hidden="true" />
-            {desktopAvailable ? "Create canvas" : "Create local canvas"}
+            Create canvas
           </button>
           <button type="button" onClick={onOpen}>
             <Icon icon="folder-open" aria-hidden="true" />

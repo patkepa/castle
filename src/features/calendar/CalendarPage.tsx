@@ -155,15 +155,17 @@ export function CalendarPage({
                     </button>
                   ))}
                 </div>
-                <button
-                  className="calendar-new-event"
-                  title={mutation.canCreate ? "Create a calendar event" : "Open Castle desktop to create events"}
-                  type="button"
-                  onClick={() => openCreate()}
-                >
-                  <Icon icon="plus" aria-hidden="true" />
-                  New event
-                </button>
+                {mutation.canCreate ? (
+                  <button
+                    className="calendar-new-event"
+                    title="Create a calendar event"
+                    type="button"
+                    onClick={() => openCreate()}
+                  >
+                    <Icon icon="plus" aria-hidden="true" />
+                    New event
+                  </button>
+                ) : null}
               </div>
         </WorkspaceToolbar>
       </WorkspacePortal>
@@ -193,14 +195,16 @@ export function CalendarPage({
               <h1>{periodLabel}</h1>
               <span>{getPeriodDetail(anchorDate, view, today, events, tasks)}</span>
             </div>
-            <button
-              className="calendar-inline-new-event"
-              type="button"
-              onClick={() => openCreate()}
-            >
-              <Icon icon="plus" aria-hidden="true" />
-              <span>New event</span>
-            </button>
+            {mutation.canCreate ? (
+              <button
+                className="calendar-inline-new-event"
+                type="button"
+                onClick={() => openCreate()}
+              >
+                <Icon icon="plus" aria-hidden="true" />
+                <span>New event</span>
+              </button>
+            ) : null}
           </header>
 
           {view === "day" || view === "week" ? (
@@ -208,7 +212,7 @@ export function CalendarPage({
               currentTime={currentTime}
               days={gridDays}
               events={events}
-              onCreateEvent={openCreate}
+              onCreateEvent={mutation.canCreate ? openCreate : undefined}
               onEditEvent={openEvent}
               selectedEventId={selectedEvent?.id ?? null}
               tasks={tasks}
@@ -218,7 +222,7 @@ export function CalendarPage({
             <MonthView
               anchorDate={anchorDate}
               events={events}
-              onCreateEvent={openCreate}
+              onCreateEvent={mutation.canCreate ? openCreate : undefined}
               onEditEvent={openEvent}
               onOpenDay={(date) => {
                 setAnchorDate(date);

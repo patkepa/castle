@@ -62,7 +62,7 @@ export function CalendarTimeGrid({
   currentTime: Date;
   today: Date;
   selectedEventId: string | null;
-  onCreateEvent: (date: Date, time: string, endMinutes?: number) => void;
+  onCreateEvent?: (date: Date, time: string, endMinutes?: number) => void;
   onEditEvent: (event: CalendarEvent) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -102,7 +102,7 @@ export function CalendarTimeGrid({
   };
 
   const startSelection = (event: ReactPointerEvent<HTMLButtonElement>, day: Date, minutes: number) => {
-    if (event.button !== 0) return;
+    if (!onCreateEvent || event.button !== 0) return;
 
     event.preventDefault();
     const nextSelection = {
@@ -184,22 +184,39 @@ export function CalendarTimeGrid({
           {days.map((day, index) => {
             const dayIsToday = isSameDay(day, today);
             return (
-              <button
-                aria-current={dayIsToday ? "date" : undefined}
-                className={[
-                  "calendar-grid-day-heading",
-                  dayIsToday ? "calendar-grid-day-heading--today" : "",
-                  isWeekend(day) ? "calendar-grid-day-heading--weekend" : "",
-                ].filter(Boolean).join(" ")}
-                key={formatLocalDateKey(day)}
-                onClick={() => onCreateEvent(day, "09:00")}
-                role="columnheader"
-                style={{ gridColumn: index + 2, gridRow: 1 }}
-                type="button"
-              >
-                <span>{weekdayLabels[(day.getDay() + 6) % 7]}</span>
-                <time dateTime={formatLocalDateKey(day)}>{day.getDate()}</time>
-              </button>
+              onCreateEvent ? (
+                <button
+                  aria-current={dayIsToday ? "date" : undefined}
+                  className={[
+                    "calendar-grid-day-heading",
+                    dayIsToday ? "calendar-grid-day-heading--today" : "",
+                    isWeekend(day) ? "calendar-grid-day-heading--weekend" : "",
+                  ].filter(Boolean).join(" ")}
+                  key={formatLocalDateKey(day)}
+                  onClick={() => onCreateEvent(day, "09:00")}
+                  role="columnheader"
+                  style={{ gridColumn: index + 2, gridRow: 1 }}
+                  type="button"
+                >
+                  <span>{weekdayLabels[(day.getDay() + 6) % 7]}</span>
+                  <time dateTime={formatLocalDateKey(day)}>{day.getDate()}</time>
+                </button>
+              ) : (
+                <div
+                  aria-current={dayIsToday ? "date" : undefined}
+                  className={[
+                    "calendar-grid-day-heading",
+                    dayIsToday ? "calendar-grid-day-heading--today" : "",
+                    isWeekend(day) ? "calendar-grid-day-heading--weekend" : "",
+                  ].filter(Boolean).join(" ")}
+                  key={formatLocalDateKey(day)}
+                  role="columnheader"
+                  style={{ gridColumn: index + 2, gridRow: 1 }}
+                >
+                  <span>{weekdayLabels[(day.getDay() + 6) % 7]}</span>
+                  <time dateTime={formatLocalDateKey(day)}>{day.getDate()}</time>
+                </div>
+              )
             );
           })}
 
@@ -218,33 +235,41 @@ export function CalendarTimeGrid({
                 >
                   {showLabel ? formatMinuteValue(minutes) : ""}
                 </time>
-                {days.map((day, dayIndex) => (
-                  <button
-                    aria-label={`Add event on ${fullDateFormatter.format(day)} at ${formatMinuteValue(minutes)}`}
-                    className={[
-                      "calendar-grid-slot",
-                      hourLine ? "calendar-grid-slot--hour" : "",
-                      minutes % 30 === 0 ? "calendar-grid-slot--half-hour" : "",
-                      isSameDay(day, today) ? "calendar-grid-slot--today" : "",
-                      isWeekend(day) ? "calendar-grid-slot--weekend" : "",
-                    ].filter(Boolean).join(" ")}
-                    key={`${formatLocalDateKey(day)}-${minutes}`}
-                    onClick={(event) => {
-                      if (ignoreSlotClickRef.current) {
-                        ignoreSlotClickRef.current = false;
-                        event.preventDefault();
-                        return;
-                      }
-                      onCreateEvent(day, formatMinuteValue(minutes));
-                    }}
-                    onPointerDown={(event) => startSelection(event, day, minutes)}
-                    onPointerEnter={(event) => extendSelection(event, day, minutes)}
-                    role="gridcell"
-                    style={{ gridColumn: dayIndex + 2, gridRow: row }}
-                    tabIndex={minutes % 60 === 0 ? 0 : -1}
-                    type="button"
-                  />
-                ))}
+                {days.map((day, dayIndex) => {
+                  const className = [
+                    "calendar-grid-slot",
+                    hourLine ? "calendar-grid-slot--hour" : "",
+                    minutes % 30 === 0 ? "calendar-grid-slot--half-hour" : "",
+                    isSameDay(day, today) ? "calendar-grid-slot--today" : "",
+                    isWeekend(day) ? "calendar-grid-slot--weekend" : "",
+                  ].filter(Boolean).join(" ");
+                  const key = `${formatLocalDateKey(day)}-${minutes}`;
+                  const style = { gridColumn: dayIndex + 2, gridRow: row };
+
+                  return onCreateEvent ? (
+                    <button
+                      aria-label={`Add event on ${fullDateFormatter.format(day)} at ${formatMinuteValue(minutes)}`}
+                      className={className}
+                      key={key}
+                      onClick={(event) => {
+                        if (ignoreSlotClickRef.current) {
+                          ignoreSlotClickRef.current = false;
+                          event.preventDefault();
+                          return;
+                        }
+                        onCreateEvent(day, formatMinuteValue(minutes));
+                      }}
+                      onPointerDown={(event) => startSelection(event, day, minutes)}
+                      onPointerEnter={(event) => extendSelection(event, day, minutes)}
+                      role="gridcell"
+                      style={style}
+                      tabIndex={minutes % 60 === 0 ? 0 : -1}
+                      type="button"
+                    />
+                  ) : (
+                    <div className={className} key={key} role="gridcell" style={style} />
+                  );
+                })}
               </div>
             );
           })}
