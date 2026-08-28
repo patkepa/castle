@@ -10,6 +10,10 @@ generated JSON and an owner-only local Turso database as disposable indexes.
 Neither generated representation accepts knowledge writes, and both can always
 be deleted and rebuilt from Markdown.
 
+[Explore the live demo](https://patkepa.github.io/castle/) built from the
+synthetic library in `examples/library/`. Every push to `main` rebuilds and
+publishes the demo through GitHub Actions.
+
 ## Getting started
 
 Castle requires Node.js, npm, and Rust 1.90 or newer.
@@ -20,7 +24,7 @@ npm run dev
 ```
 
 A fresh checkout opens the synthetic, publish-safe library in
-`example_library/`. To use another library, copy `CONFIGURATION.md` to
+`examples/library/`. To use another library, copy `CONFIGURATION.md` to
 `CONFIGURATION.local.md` and edit the local copy. The local override is ignored
 by Git and can contain machine-specific paths or a private owner identity.
 Command-line `--library` and `--repository` flags override the configured paths

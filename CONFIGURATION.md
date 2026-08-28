@@ -4,7 +4,7 @@ application:
   name: Castle
   bundle_id: app.castle.desktop
 library:
-  path: example_library
+  path: examples/library
   repository_path: .
 owner:
   note_id: people/alex_morgan
@@ -32,7 +32,7 @@ without changing application source code.
   Castle uses it only for repository-aware metadata such as original stash
   creation dates.
 
-The defaults use the synthetic `example_library/` included in this repository.
+The defaults use the synthetic `examples/library/` included in this repository.
 Point a local override at your own library; absolute paths and paths relative
 to this file are both accepted.
 

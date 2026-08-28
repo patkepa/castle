@@ -19,7 +19,7 @@ test("resolves development and packaged Castle icons", () => {
       mainBundleDirectory: path.join("/workspace", ".vite", "build"),
       resourcesPath: path.join("/Applications", "Castle.app", "Contents", "Resources"),
     }),
-    path.join("/workspace", "assets", "castle.png"),
+    path.join("/workspace", "resources", "app-icons", "castle.png"),
   );
   assert.equal(
     resolveCastleRuntimeIconPath({
