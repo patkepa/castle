@@ -1,7 +1,7 @@
 # Castle
 
 A local-first React, Electron, and Rust application for Markdown knowledge
-bases. 
+bases.
 
 [Explore the live demo](https://patkepa.github.io/castle/)
 
