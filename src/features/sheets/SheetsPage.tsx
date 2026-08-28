@@ -236,45 +236,49 @@ export function SheetsPage({
   return (
     <main
       aria-label="Sheets"
-      className={`sheets-page${dragActive ? " is-drag-active" : ""}`}
-      onDragEnter={(event) => {
+      className={`sheets-page${desktopAvailable && dragActive ? " is-drag-active" : ""}`}
+      onDragEnter={desktopAvailable ? (event) => {
         event.preventDefault();
         setDragActive(true);
-      }}
-      onDragOver={(event) => event.preventDefault()}
-      onDragLeave={(event) => {
+      } : undefined}
+      onDragOver={desktopAvailable ? (event) => event.preventDefault() : undefined}
+      onDragLeave={desktopAvailable ? (event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setDragActive(false);
         }
-      }}
-      onDrop={handleDrop}
+      } : undefined}
+      onDrop={desktopAvailable ? handleDrop : undefined}
     >
-      <input
-        ref={fileInputRef}
-        className="sr-only"
-        type="file"
-        accept=".ods,application/vnd.oasis.opendocument.spreadsheet"
-        onChange={handleFileChange}
-      />
+      {desktopAvailable ? (
+        <input
+          ref={fileInputRef}
+          className="sr-only"
+          type="file"
+          accept=".ods,application/vnd.oasis.opendocument.spreadsheet"
+          onChange={handleFileChange}
+        />
+      ) : null}
       <WorkspaceToolbar ariaLabel="Sheets toolbar" className="sheets-toolbar">
         <div className="sheets-toolbar-title">
           <Icon icon="th" size={16} aria-hidden="true" />
           <strong>Sheets</strong>
           <span>ODS preview</span>
         </div>
-        <button
-          className="sheets-open-button"
-          type="button"
-          disabled={loading}
-          onClick={openPicker}
-        >
-          <Icon icon={loading ? "refresh" : "folder-open"} aria-hidden="true" />
-          {loading
-            ? "Opening…"
-            : openedSpreadsheet
-              ? "Open another"
-              : "Open .ods"}
-        </button>
+        {desktopAvailable ? (
+          <button
+            className="sheets-open-button"
+            type="button"
+            disabled={loading}
+            onClick={openPicker}
+          >
+            <Icon icon={loading ? "refresh" : "folder-open"} aria-hidden="true" />
+            {loading
+              ? "Opening…"
+              : openedSpreadsheet
+                ? "Open another"
+                : "Open .ods"}
+          </button>
+        ) : null}
       </WorkspaceToolbar>
 
       <div className="sheets-workspace">
@@ -627,23 +631,27 @@ export function SheetsManager({
               ? "Reading your sheets…"
               : desktopAvailable
                 ? "Your sheets library is empty"
-                : "Open a spreadsheet"}
+                : "No published spreadsheets"}
           </h2>
           <p>
             {desktopAvailable
               ? "Add .ods files to library/sheets/, then refresh this collection."
-              : "This Cloudflare build does not contain any published library sheets. You can still preview a local ODS file here."}
+              : "This static build does not contain any published library sheets."}
           </p>
-          <button
-            className="sheets-empty-open"
-            type="button"
-            disabled={loading}
-            onClick={onOpenLocal}
-          >
-            <Icon icon="folder-open" aria-hidden="true" />
-            Open local .ods
-          </button>
-          <small>Files opened locally stay on this device</small>
+          {desktopAvailable ? (
+            <>
+              <button
+                className="sheets-empty-open"
+                type="button"
+                disabled={loading}
+                onClick={onOpenLocal}
+              >
+                <Icon icon="folder-open" aria-hidden="true" />
+                Open local .ods
+              </button>
+              <small>Files opened locally stay on this device</small>
+            </>
+          ) : null}
         </div>
       )}
     </section>

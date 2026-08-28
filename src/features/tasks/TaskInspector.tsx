@@ -727,16 +727,22 @@ function TaskChecklistItem({
 }) {
   return (
     <li className={subtask.completed ? "is-complete" : undefined}>
-      <button
-        type="button"
-        className="task-checklist-toggle"
-        aria-label={`${subtask.completed ? "Mark incomplete" : "Mark complete"}: ${subtask.title}`}
-        aria-pressed={subtask.completed}
-        disabled={!editable || disabled}
-        onClick={onToggle}
-      >
-        {subtask.completed ? <Icon icon="tick" size={11} /> : null}
-      </button>
+      {editable ? (
+        <button
+          type="button"
+          className="task-checklist-toggle"
+          aria-label={`${subtask.completed ? "Mark incomplete" : "Mark complete"}: ${subtask.title}`}
+          aria-pressed={subtask.completed}
+          disabled={disabled}
+          onClick={onToggle}
+        >
+          {subtask.completed ? <Icon icon="tick" size={11} /> : null}
+        </button>
+      ) : (
+        <span className="task-checklist-toggle" aria-hidden="true">
+          {subtask.completed ? <Icon icon="tick" size={11} /> : null}
+        </span>
+      )}
       <span>{subtask.title}</span>
       {editable ? (
         <button

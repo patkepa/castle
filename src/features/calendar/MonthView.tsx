@@ -33,7 +33,7 @@ export function MonthView({
   events: CalendarEvent[];
   tasks: Task[];
   selectedEventId: string | null;
-  onCreateEvent: (date: Date, time: string) => void;
+  onCreateEvent?: (date: Date, time: string) => void;
   onEditEvent: (event: CalendarEvent) => void;
   onOpenDay: (date: Date) => void;
 }) {
@@ -86,14 +86,16 @@ export function MonthView({
                 >
                   {day.getDate()}
                 </button>
-                <button
-                  aria-label={`Add event on ${fullDateFormatter.format(day)}`}
-                  className="calendar-day-add"
-                  onClick={() => onCreateEvent(day, "09:00")}
-                  type="button"
-                >
-                  <Icon icon="plus" size={12} aria-hidden="true" />
-                </button>
+                {onCreateEvent ? (
+                  <button
+                    aria-label={`Add event on ${fullDateFormatter.format(day)}`}
+                    className="calendar-day-add"
+                    onClick={() => onCreateEvent(day, "09:00")}
+                    type="button"
+                  >
+                    <Icon icon="plus" size={12} aria-hidden="true" />
+                  </button>
+                ) : null}
               </div>
               <div className="calendar-month-items">
                 {items.slice(0, visibleItemLimit).map((item) =>

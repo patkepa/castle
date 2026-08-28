@@ -22,6 +22,7 @@ const builtInGroups: readonly TaskGroupOption[] = [
 ];
 
 export function TaskGroups({
+  canManage,
   tasks,
   customGroups,
   selectedGroup,
@@ -29,6 +30,7 @@ export function TaskGroups({
   onAddGroup,
   onSelectGroup,
 }: {
+  canManage: boolean;
   tasks: Task[];
   customGroups: string[];
   selectedGroup: TaskGroupFilter;
@@ -86,7 +88,7 @@ export function TaskGroups({
           );
         })}
 
-        {adding ? (
+        {canManage && adding ? (
           <form className="task-group-create" onSubmit={submit}>
             <Icon icon="folder-close" size={14} aria-hidden="true" />
             <input
@@ -130,15 +132,17 @@ export function TaskGroups({
             </label>
           </div>
         </details>
-        <button
-          type="button"
-          className="task-pane-add"
-          aria-label="Add task group"
-          title="Add task group"
-          onClick={() => setAdding(true)}
-        >
-          <Icon icon="small-plus" size={15} aria-hidden="true" />
-        </button>
+        {canManage ? (
+          <button
+            type="button"
+            className="task-pane-add"
+            aria-label="Add task group"
+            title="Add task group"
+            onClick={() => setAdding(true)}
+          >
+            <Icon icon="small-plus" size={15} aria-hidden="true" />
+          </button>
+        ) : null}
       </footer>
     </aside>
   );

@@ -140,6 +140,7 @@ export function TasksPage({
     people,
     onTasksChange,
   });
+  const canOrganize = platform.runtime === "desktop";
 
   useEffect(() => {
     if (pendingProject && projects.some((project) => project.id === pendingProject.id)) {
@@ -283,6 +284,7 @@ export function TasksPage({
         <div className="tasks-topbar">
           <TaskProjectTabs
             canCreate={taskMutations.canCreate}
+            canOrganize={canOrganize}
             busy={projectCreationBusy}
             error={projectCreationError}
             pendingProject={pendingProject}
@@ -318,6 +320,7 @@ export function TasksPage({
         ariaLabel="Task planning workspace"
       >
         <TaskGroups
+          canManage={canOrganize}
           tasks={scopedTasks}
           customGroups={workspaceCustomGroups}
           selectedGroup={selectedGroup}
@@ -445,6 +448,7 @@ export function TasksPage({
 
 function TaskProjectTabs({
   canCreate,
+  canOrganize,
   busy,
   error,
   pendingProject,
@@ -460,6 +464,7 @@ function TaskProjectTabs({
   onSelect,
 }: {
   canCreate: boolean;
+  canOrganize: boolean;
   busy: boolean;
   error: string;
   pendingProject: PendingProject | null;
@@ -690,23 +695,29 @@ function TaskProjectTabs({
       type="button"
       role="tab"
       aria-selected={selectedId === project.id}
-      aria-label={selectedProjectIdSet.has(project.id)
+      aria-label={canOrganize && selectedProjectIdSet.has(project.id)
         ? `${project.title}, selected for a folder`
         : project.title}
-      data-folder-selected={selectedProjectIdSet.has(project.id) || undefined}
-      data-drop-position={dropPosition || undefined}
-      data-organizing="true"
-      draggable
-      data-dragging={draggedItem?.kind === "project" && draggedItem.id === project.id || undefined}
-      onClick={(event) => selectProject(project.id, event.shiftKey)}
-      onContextMenu={(event) => openProjectFolderMenu(project.id, event)}
-      onDragEnd={() => {
+      data-folder-selected={canOrganize && selectedProjectIdSet.has(project.id) || undefined}
+      data-drop-position={canOrganize ? dropPosition || undefined : undefined}
+      data-organizing={canOrganize || undefined}
+      draggable={canOrganize}
+      data-dragging={canOrganize && draggedItem?.kind === "project" && draggedItem.id === project.id || undefined}
+      onClick={(event) => canOrganize
+        ? selectProject(project.id, event.shiftKey)
+        : onSelect(project.id)}
+      onContextMenu={canOrganize
+        ? (event) => openProjectFolderMenu(project.id, event)
+        : undefined}
+      onDragEnd={canOrganize ? () => {
         setDraggedItem(null);
         setDropLocation(null);
-      }}
-      onDragOver={(event) => acceptDrop(event, target)}
-      onDragStart={(event) => startDragging({ kind: "project", id: project.id }, event)}
-      onDrop={(event) => finishDrop(event, target)}
+      } : undefined}
+      onDragOver={canOrganize ? (event) => acceptDrop(event, target) : undefined}
+      onDragStart={canOrganize
+        ? (event) => startDragging({ kind: "project", id: project.id }, event)
+        : undefined}
+      onDrop={canOrganize ? (event) => finishDrop(event, target) : undefined}
     >
       {project.title}
       </button>
@@ -735,7 +746,7 @@ function TaskProjectTabs({
             folder={folder}
             projects={projectById}
             selectedId={selectedId}
-            organizing
+            organizing={canOrganize}
             draggedItem={draggedItem}
             dropLocation={dropLocation}
             dropPosition={dropPosition}
@@ -780,13 +791,12 @@ function TaskProjectTabs({
             />
           </form>
         ) : null}
-        {!adding ? (
+        {!adding && canCreate ? (
           <button
             type="button"
             className="tasks-project-add"
             aria-label="Create project"
-            disabled={!canCreate}
-            title={canCreate ? "Create project" : "Project creation is available in the desktop app"}
+            title="Create project"
             onClick={() => setAdding(true)}
           >
             <Icon icon="small-plus" size={15} aria-hidden="true" />
@@ -794,7 +804,7 @@ function TaskProjectTabs({
         ) : null}
       </div>
       {error ? <span className="tasks-project-error" role="alert">{error}</span> : null}
-      {folderEditor ? (
+      {folderEditor && canOrganize ? (
         <ProjectFolderDialog
           editor={folderEditor}
           onCancel={() => setFolderEditor(null)}
@@ -891,31 +901,33 @@ function TaskProjectFolderTab({
               ) : null;
             })}
           </section>
-          <footer>
-            <button
-              aria-label="Rename folder"
-              title="Rename folder"
-              type="button"
-              onClick={() => {
-              onRename();
-              setOpen(false);
-              }}
-            >
-              <Icon icon="edit" size={14} aria-hidden="true" />
-            </button>
-            <button
-              aria-label="Remove folder"
-              className="is-danger"
-              title="Remove folder"
-              type="button"
-              onClick={() => {
-              onRemove();
-              setOpen(false);
-              }}
-            >
-              <Icon icon="trash" size={14} aria-hidden="true" />
-            </button>
-          </footer>
+          {organizing ? (
+            <footer>
+              <button
+                aria-label="Rename folder"
+                title="Rename folder"
+                type="button"
+                onClick={() => {
+                  onRename();
+                  setOpen(false);
+                }}
+              >
+                <Icon icon="edit" size={14} aria-hidden="true" />
+              </button>
+              <button
+                aria-label="Remove folder"
+                className="is-danger"
+                title="Remove folder"
+                type="button"
+                onClick={() => {
+                  onRemove();
+                  setOpen(false);
+                }}
+              >
+                <Icon icon="trash" size={14} aria-hidden="true" />
+              </button>
+            </footer>
+          ) : null}
         </div>
       )}
       inheritDarkTheme
