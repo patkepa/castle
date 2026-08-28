@@ -1,0 +1,28 @@
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.youtube.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https:; media-src 'self' blob: https: http:; frame-src https: http:; form-action 'none'; frame-ancestors 'none'
+
+/app-assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/generated/notes/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/generated/avatars/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/generated/catalog.json
+  Cache-Control: private, no-cache, must-revalidate
+
+/generated/bootstrap.json
+  Cache-Control: private, no-cache, must-revalidate
+
+/generated/search-index.json
+  Cache-Control: private, no-cache, must-revalidate
+
+/generated/relationship-graph.json
+  Cache-Control: private, no-cache, must-revalidate

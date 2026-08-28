@@ -1,0 +1,34 @@
+[workspace]
+members = ["castle_contracts", "castle_core", "castle_index", "castle_mcp", "castle_cli", "castle_web_build"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.90"
+version = "0.1.0"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+anyhow = "1.0.103"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+clap = { version = "4.6.4", features = ["derive"] }
+fastembed = { version = "=5.17.4", default-features = false, features = ["hf-hub-rustls-tls", "ort-download-binaries-rustls-tls"] }
+hf-hub = { version = "=0.5.0", default-features = false, features = ["rustls-tls", "ureq"] }
+regex = "1.12.3"
+rmcp = { version = "=3.1.0", default-features = false, features = ["macros", "server", "transport-io"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.150", features = ["preserve_order"] }
+serde_yaml = "0.9.34"
+schemars = "1.2.2"
+sha2 = "0.10.9"
+tempfile = "3.27.0"
+tokio = { version = "=1.52.3", features = ["macros", "rt"] }
+turso = { version = "=0.8.0-pre.2", default-features = false, features = ["fts"] }
+unicode-normalization = "0.1.25"
+walkdir = "2.5.0"
+jsonschema = { version = "0.49.3", default-features = false }
+icu_collator = "=2.2.0"
+icu_locale = "=2.2.0"
+image = { version = "0.25.9", default-features = false, features = ["jpeg", "png", "webp"] }
+notify = "8.2.0"

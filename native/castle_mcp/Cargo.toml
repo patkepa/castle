@@ -1,0 +1,21 @@
+[package]
+name = "castle-mcp"
+description = "Read-only MCP adapter for Castle knowledge tools"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+castle-index = { path = "../castle_index" }
+rmcp.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio = { workspace = true, features = ["io-std", "io-util", "sync", "time"] }
+
+[dev-dependencies]
+castle-core = { path = "../castle_core" }
+rmcp = { workspace = true, features = ["client"] }
+tempfile.workspace = true

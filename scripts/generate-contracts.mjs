@@ -1,0 +1,222 @@
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const schemaPath = path.join(projectRoot, "src/generated/castle_contract_schema.json");
+const outputPath = path.join(projectRoot, "src/generated/castle_contracts.ts");
+const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+const definitions = schema.$defs ?? {};
+const definitionEntries = Object.entries(definitions).sort(([left], [right]) =>
+  left.localeCompare(right)
+);
+const rpcProtocolVersion = schema["x-castle-rpc-protocol-version"];
+const contentContractVersion = schema["x-castle-content-contract-version"];
+if (!Number.isSafeInteger(rpcProtocolVersion) || !Number.isSafeInteger(contentContractVersion)) {
+  throw new Error("Castle contract schema is missing its protocol versions.");
+}
+
+const declarations = definitionEntries.map(([name, definition]) =>
+  declaration(name, definition)
+).join("\n\n");
+const contractMap = definitionEntries
+  .map(([name]) => `  ${name}: ${name};`)
+  .join("\n");
+
+const runtime = `
+export interface CastleContractMap {
+${contractMap}
+}
+
+type JsonSchema = {
+  $ref?: string;
+  anyOf?: JsonSchema[];
+  oneOf?: JsonSchema[];
+  const?: unknown;
+  enum?: unknown[];
+  type?: string | string[];
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  items?: JsonSchema;
+  additionalProperties?: boolean | JsonSchema;
+};
+
+const contractDefinitions = (schemaDocument as unknown as {
+  $defs: Record<string, JsonSchema>;
+}).$defs;
+
+export function parseCastleContract<Name extends keyof CastleContractMap>(
+  name: Name,
+  value: unknown,
+): CastleContractMap[Name] {
+  validateSchema(contractDefinitions[name], value, String(name), new Set());
+  return value as CastleContractMap[Name];
+}
+
+function validateSchema(
+  schema: JsonSchema,
+  value: unknown,
+  valuePath: string,
+  references: Set<string>,
+): void {
+  if (schema.$ref) {
+    const name = schema.$ref.split("/").at(-1);
+    if (!name || !contractDefinitions[name]) {
+      throw new Error(\`Castle contract contains an unresolved reference at \${valuePath}.\`);
+    }
+    const referenceKey = \`\${name}:\${valuePath}\`;
+    if (references.has(referenceKey)) return;
+    const nextReferences = new Set(references).add(referenceKey);
+    validateSchema(contractDefinitions[name], value, valuePath, nextReferences);
+    return;
+  }
+  if (schema.const !== undefined && value !== schema.const) invalid(valuePath);
+  if (schema.enum && !schema.enum.includes(value)) invalid(valuePath);
+  if (schema.anyOf || schema.oneOf) {
+    const options = schema.anyOf ?? schema.oneOf ?? [];
+    if (!options.some((option) => isValid(option, value, valuePath, references))) {
+      invalid(valuePath);
+    }
+    return;
+  }
+  const types = Array.isArray(schema.type)
+    ? schema.type
+    : schema.type
+      ? [schema.type]
+      : [];
+  if (types.length > 0 && !types.some((type) => matchesType(type, value))) {
+    invalid(valuePath);
+  }
+  if (Array.isArray(value) && schema.items) {
+    value.forEach((item, index) =>
+      validateSchema(schema.items!, item, \`\${valuePath}[\${index}]\`, references)
+    );
+    return;
+  }
+  if (isRecord(value) && (schema.properties || schema.required)) {
+    for (const key of schema.required ?? []) {
+      if (!(key in value)) invalid(\`\${valuePath}.\${key}\`);
+    }
+    for (const [key, item] of Object.entries(value)) {
+      const propertySchema = schema.properties?.[key];
+      if (propertySchema) {
+        validateSchema(propertySchema, item, \`\${valuePath}.\${key}\`, references);
+      } else if (schema.additionalProperties === false) {
+        invalid(\`\${valuePath}.\${key}\`);
+      } else if (isRecord(schema.additionalProperties)) {
+        validateSchema(
+          schema.additionalProperties,
+          item,
+          \`\${valuePath}.\${key}\`,
+          references,
+        );
+      }
+    }
+  }
+}
+
+function isValid(
+  schema: JsonSchema,
+  value: unknown,
+  valuePath: string,
+  references: Set<string>,
+) {
+  try {
+    validateSchema(schema, value, valuePath, references);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function matchesType(type: string, value: unknown) {
+  if (type === "null") return value === null;
+  if (type === "array") return Array.isArray(value);
+  if (type === "object") return isRecord(value);
+  if (type === "integer") return Number.isSafeInteger(value);
+  if (type === "number") return typeof value === "number" && Number.isFinite(value);
+  return typeof value === type;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function invalid(valuePath: string): never {
+  throw new Error(\`Castle received invalid contract data at \${valuePath}.\`);
+}
+`;
+
+const output = [
+  "// Generated by scripts/generate-contracts.mjs from Rust castle-contracts DTOs.",
+  "// Do not edit this file directly.",
+  'import schemaDocument from "./castle_contract_schema.json";',
+  "",
+  `export const CASTLE_RPC_PROTOCOL_VERSION = ${rpcProtocolVersion} as const;`,
+  `export const CASTLE_CONTENT_CONTRACT_VERSION = ${contentContractVersion} as const;`,
+  "",
+  declarations,
+  runtime.trim(),
+  "",
+].join("\n");
+
+await writeFile(outputPath, output);
+
+function declaration(name, definition) {
+  if (
+    definition.type === "object" &&
+    definition.properties &&
+    !definition.oneOf &&
+    !definition.anyOf
+  ) {
+    const required = new Set(definition.required ?? []);
+    const properties = Object.entries(definition.properties).map(([key, value]) =>
+      `  ${propertyName(key)}${required.has(key) ? "" : "?"}: ${schemaType(value)};`
+    );
+    return `export interface ${name} {\n${properties.join("\n")}\n}`;
+  }
+  return `export type ${name} = ${schemaType(definition)};`;
+}
+
+function schemaType(definition) {
+  if (definition.$ref) return definition.$ref.split("/").at(-1);
+  if (Object.hasOwn(definition, "const")) return JSON.stringify(definition.const);
+  if (definition.enum) {
+    return definition.enum.map((value) => JSON.stringify(value)).join(" | ");
+  }
+  if (definition.anyOf || definition.oneOf) {
+    return (definition.anyOf ?? definition.oneOf).map(schemaType).join(" | ");
+  }
+  if (Array.isArray(definition.type)) {
+    return definition.type
+      .map((type) => schemaType({ ...definition, type }))
+      .join(" | ");
+  }
+  if (definition.type === "array") {
+    return `Array<${schemaType(definition.items ?? {})}>`;
+  }
+  if (definition.type === "object") {
+    if (definition.properties) {
+      const required = new Set(definition.required ?? []);
+      return `{ ${Object.entries(definition.properties).map(([key, value]) =>
+        `${propertyName(key)}${required.has(key) ? "" : "?"}: ${schemaType(value)}`
+      ).join("; ")} }`;
+    }
+    if (
+      definition.additionalProperties &&
+      typeof definition.additionalProperties === "object"
+    ) {
+      return `Record<string, ${schemaType(definition.additionalProperties)}>`;
+    }
+    return "Record<string, unknown>";
+  }
+  if (definition.type === "string") return "string";
+  if (definition.type === "number" || definition.type === "integer") return "number";
+  if (definition.type === "boolean") return "boolean";
+  if (definition.type === "null") return "null";
+  return "unknown";
+}
+
+function propertyName(value) {
+  return /^[A-Za-z_$][\w$]*$/.test(value) ? value : JSON.stringify(value);
+}

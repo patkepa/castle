@@ -1,0 +1,1926 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CastleContractBundle",
+  "type": "object",
+  "properties": {
+    "protocol_handshake": {
+      "$ref": "#/$defs/ProtocolHandshake"
+    },
+    "service_state": {
+      "$ref": "#/$defs/ServiceState"
+    },
+    "source_document": {
+      "$ref": "#/$defs/SourceDocument"
+    },
+    "save_source_input": {
+      "$ref": "#/$defs/SaveSourceInput"
+    },
+    "create_source_input": {
+      "$ref": "#/$defs/CreateSourceInput"
+    },
+    "create_folder_input": {
+      "$ref": "#/$defs/CreateFolderInput"
+    },
+    "delete_source_input": {
+      "$ref": "#/$defs/DeleteSourceInput"
+    },
+    "delete_folder_input": {
+      "$ref": "#/$defs/DeleteFolderInput"
+    },
+    "restore_source_input": {
+      "$ref": "#/$defs/RestoreSourceInput"
+    },
+    "move_source_input": {
+      "$ref": "#/$defs/MoveSourceInput"
+    },
+    "save_source_result": {
+      "$ref": "#/$defs/SaveSourceResult"
+    },
+    "delete_source_result": {
+      "$ref": "#/$defs/DeleteSourceResult"
+    },
+    "create_folder_result": {
+      "$ref": "#/$defs/CreateFolderResult"
+    },
+    "delete_folder_result": {
+      "$ref": "#/$defs/DeleteFolderResult"
+    },
+    "move_source_result": {
+      "$ref": "#/$defs/MoveSourceResult"
+    },
+    "knowledge_base": {
+      "$ref": "#/$defs/KnowledgeBase"
+    },
+    "generated_resource_manifest": {
+      "$ref": "#/$defs/GeneratedResourceManifest"
+    },
+    "notes_resource": {
+      "$ref": "#/$defs/NotesResource"
+    },
+    "tasks_resource": {
+      "$ref": "#/$defs/TasksResource"
+    },
+    "projects_resource": {
+      "$ref": "#/$defs/ProjectsResource"
+    },
+    "calendar_resource": {
+      "$ref": "#/$defs/CalendarResource"
+    },
+    "compilation_delta": {
+      "$ref": "#/$defs/CompilationDelta"
+    },
+    "mutate_task_input": {
+      "$ref": "#/$defs/MutateTaskInput"
+    },
+    "create_task_input": {
+      "$ref": "#/$defs/CreateTaskInput"
+    },
+    "task_mutation_result": {
+      "$ref": "#/$defs/TaskMutationResult"
+    },
+    "delete_task_input": {
+      "$ref": "#/$defs/DeleteTaskInput"
+    },
+    "delete_task_result": {
+      "$ref": "#/$defs/DeleteTaskResult"
+    },
+    "restore_task_input": {
+      "$ref": "#/$defs/RestoreTaskInput"
+    },
+    "update_person_input": {
+      "$ref": "#/$defs/UpdatePersonInput"
+    },
+    "person_mutation_result": {
+      "$ref": "#/$defs/PersonMutationResult"
+    }
+  },
+  "required": [
+    "protocol_handshake",
+    "service_state",
+    "source_document",
+    "save_source_input",
+    "create_source_input",
+    "create_folder_input",
+    "delete_source_input",
+    "delete_folder_input",
+    "restore_source_input",
+    "move_source_input",
+    "save_source_result",
+    "delete_source_result",
+    "create_folder_result",
+    "delete_folder_result",
+    "move_source_result",
+    "knowledge_base",
+    "generated_resource_manifest",
+    "notes_resource",
+    "tasks_resource",
+    "projects_resource",
+    "calendar_resource",
+    "compilation_delta",
+    "mutate_task_input",
+    "create_task_input",
+    "task_mutation_result",
+    "delete_task_input",
+    "delete_task_result",
+    "restore_task_input",
+    "update_person_input",
+    "person_mutation_result"
+  ],
+  "$defs": {
+    "ProtocolHandshake": {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "contentContractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "serverVersion": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "contentContractVersion",
+        "serverVersion",
+        "capabilities"
+      ]
+    },
+    "ServiceState": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "$ref": "#/$defs/ProtocolHandshake"
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "publicRoot": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "protocol",
+        "generatedAt",
+        "publicRoot"
+      ]
+    },
+    "SourceDocument": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "markdown",
+        "revision"
+      ]
+    },
+    "SaveSourceInput": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "markdown",
+        "expectedRevision"
+      ]
+    },
+    "CreateSourceInput": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "markdown"
+      ]
+    },
+    "CreateFolderInput": {
+      "type": "object",
+      "properties": {
+        "sourceDirectory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceDirectory"
+      ]
+    },
+    "DeleteSourceInput": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "expectedRevision"
+      ]
+    },
+    "DeleteFolderInput": {
+      "type": "object",
+      "properties": {
+        "sourceDirectory": {
+          "type": "string"
+        },
+        "recursive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sourceDirectory",
+        "recursive"
+      ]
+    },
+    "RestoreSourceInput": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "trashId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "trashId"
+      ]
+    },
+    "MoveSourceInput": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "destinationSourceFile": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "destinationSourceFile",
+        "expectedRevision"
+      ]
+    },
+    "SaveSourceResult": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "sourceGeneration": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "publicationPending": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "revision",
+        "generatedAt"
+      ]
+    },
+    "DeleteSourceResult": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "trashId": {
+          "type": "string"
+        },
+        "sourceGeneration": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "publicationPending": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceFile",
+        "generatedAt",
+        "trashId"
+      ]
+    },
+    "CreateFolderResult": {
+      "type": "object",
+      "properties": {
+        "sourceDirectory": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceDirectory",
+        "generatedAt"
+      ]
+    },
+    "DeleteFolderResult": {
+      "type": "object",
+      "properties": {
+        "sourceDirectory": {
+          "type": "string"
+        },
+        "entryCount": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "trashId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceDirectory",
+        "entryCount",
+        "generatedAt"
+      ]
+    },
+    "MoveSourceResult": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "previousSourceFile": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "sourceGeneration": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "publicationPending": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "noteId",
+        "previousSourceFile",
+        "sourceFile",
+        "route",
+        "revision",
+        "generatedAt"
+      ]
+    },
+    "KnowledgeBase": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SectionSummary"
+          }
+        },
+        "folders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LibraryFolder"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogNote"
+          }
+        },
+        "calendarEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CalendarEvent"
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Task"
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          }
+        },
+        "shortcutCollections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortcutCollection"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "sections",
+        "folders",
+        "notes",
+        "calendarEvents",
+        "tasks",
+        "projects",
+        "shortcutCollections"
+      ]
+    },
+    "SectionSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "icon",
+        "count"
+      ]
+    },
+    "LibraryFolder": {
+      "type": "object",
+      "properties": {
+        "sectionId": {
+          "type": "string"
+        },
+        "directory": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "entryCount": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "noteCount": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "sectionId",
+        "directory",
+        "entryCount",
+        "noteCount"
+      ]
+    },
+    "CatalogNote": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "sectionLabel": {
+          "type": "string"
+        },
+        "relativePath": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "preview": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "avatarUrl": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modifiedAt": {
+          "type": "string"
+        },
+        "contentPath": {
+          "type": "string"
+        },
+        "wordCount": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "readingMinutes": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "pinned": {
+          "type": "boolean"
+        },
+        "sidebar": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PersonNoteSidebar"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "section",
+        "sectionLabel",
+        "relativePath",
+        "sourceFile",
+        "route",
+        "title",
+        "excerpt",
+        "tags",
+        "aliases",
+        "status",
+        "avatarUrl",
+        "modifiedAt",
+        "contentPath",
+        "wordCount",
+        "readingMinutes",
+        "pinned"
+      ]
+    },
+    "PersonNoteSidebar": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "avatarUrl": {
+          "type": "string"
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NoteSidebarFact"
+          }
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PersonContact"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "avatarUrl",
+        "facts",
+        "contacts"
+      ]
+    },
+    "NoteSidebarFact": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "href": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ]
+    },
+    "PersonContact": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/PersonContactKind"
+        },
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "label",
+        "value",
+        "detail",
+        "href"
+      ]
+    },
+    "PersonContactKind": {
+      "type": "string",
+      "enum": [
+        "phone",
+        "email",
+        "address",
+        "website",
+        "social",
+        "other"
+      ]
+    },
+    "CalendarEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "noteId": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "startTime": {
+          "type": "string"
+        },
+        "endTime": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "endDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recurrence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CalendarEventRecurrence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repeatUntil": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/CalendarEventKind"
+        },
+        "people": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CalendarEventPerson"
+          }
+        },
+        "project": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProjectReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "noteId",
+        "route",
+        "date",
+        "startTime",
+        "title",
+        "description",
+        "kind",
+        "people"
+      ]
+    },
+    "CalendarEventRecurrence": {
+      "type": "string",
+      "enum": [
+        "weekly"
+      ]
+    },
+    "CalendarEventKind": {
+      "type": "string",
+      "enum": [
+        "work",
+        "social"
+      ]
+    },
+    "CalendarEventPerson": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "name",
+        "route"
+      ]
+    },
+    "ProjectReference": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "route"
+      ]
+    },
+    "Task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "noteId": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TaskStatus"
+        },
+        "targetDate": {
+          "type": "string"
+        },
+        "targetTime": {
+          "type": "string"
+        },
+        "estimateMinutes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "completedAt": {
+          "type": "string"
+        },
+        "sortOrder": {
+          "type": "number",
+          "format": "double"
+        },
+        "modifiedAt": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "people": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TaskPerson"
+          }
+        },
+        "project": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProjectReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subtasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TaskSubtask"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "noteId",
+        "route",
+        "title",
+        "description",
+        "status",
+        "targetDate",
+        "targetTime",
+        "estimateMinutes",
+        "createdAt",
+        "completedAt",
+        "sortOrder",
+        "modifiedAt",
+        "tags",
+        "people",
+        "subtasks"
+      ]
+    },
+    "TaskStatus": {
+      "type": "string",
+      "enum": [
+        "todo",
+        "in_progress",
+        "blocked",
+        "done"
+      ]
+    },
+    "TaskPerson": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "avatarUrl": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "noteId",
+        "name",
+        "route",
+        "avatarUrl"
+      ]
+    },
+    "TaskSubtask": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "completed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "completed"
+      ]
+    },
+    "Project": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "noteId": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ProjectStatus"
+        },
+        "startedAt": {
+          "type": "string"
+        },
+        "completedAt": {
+          "type": "string"
+        },
+        "modifiedAt": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "people": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TaskPerson"
+          }
+        },
+        "taskIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "eventIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "noteId",
+        "route",
+        "title",
+        "description",
+        "status",
+        "startedAt",
+        "completedAt",
+        "modifiedAt",
+        "tags",
+        "people",
+        "taskIds",
+        "eventIds"
+      ]
+    },
+    "ProjectStatus": {
+      "type": "string",
+      "enum": [
+        "idea",
+        "planned",
+        "active",
+        "paused",
+        "completed",
+        "archived"
+      ]
+    },
+    "ShortcutCollection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "shortcuts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Shortcut"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "sortOrder",
+        "shortcuts"
+      ]
+    },
+    "Shortcut": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "label",
+        "description",
+        "href"
+      ]
+    },
+    "GeneratedResourceManifest": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/GeneratedResourceDescriptor"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "resources"
+      ]
+    },
+    "GeneratedResourceDescriptor": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "itemCount": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "itemCount"
+      ]
+    },
+    "NotesResource": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogNote"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "notes"
+      ]
+    },
+    "TasksResource": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Task"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "tasks"
+      ]
+    },
+    "ProjectsResource": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "projects"
+      ]
+    },
+    "CalendarResource": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "calendarEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CalendarEvent"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "calendarEvents"
+      ]
+    },
+    "CompilationDelta": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SectionSummary"
+          }
+        },
+        "folders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LibraryFolder"
+          }
+        },
+        "notes": {
+          "$ref": "#/$defs/EntityDelta"
+        },
+        "tasks": {
+          "$ref": "#/$defs/EntityDelta2"
+        },
+        "projects": {
+          "$ref": "#/$defs/EntityDelta3"
+        },
+        "calendarEvents": {
+          "$ref": "#/$defs/EntityDelta4"
+        },
+        "shortcutCollections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortcutCollection"
+          }
+        },
+        "mutableResourcePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "sections",
+        "folders",
+        "notes",
+        "tasks",
+        "projects",
+        "calendarEvents",
+        "shortcutCollections",
+        "mutableResourcePaths"
+      ]
+    },
+    "EntityDelta": {
+      "type": "object",
+      "properties": {
+        "upserted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogNote"
+          }
+        },
+        "removedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orderedIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "upserted",
+        "removedIds"
+      ]
+    },
+    "EntityDelta2": {
+      "type": "object",
+      "properties": {
+        "upserted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Task"
+          }
+        },
+        "removedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orderedIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "upserted",
+        "removedIds"
+      ]
+    },
+    "EntityDelta3": {
+      "type": "object",
+      "properties": {
+        "upserted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          }
+        },
+        "removedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orderedIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "upserted",
+        "removedIds"
+      ]
+    },
+    "EntityDelta4": {
+      "type": "object",
+      "properties": {
+        "upserted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CalendarEvent"
+          }
+        },
+        "removedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orderedIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "upserted",
+        "removedIds"
+      ]
+    },
+    "MutateTaskInput": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string"
+        },
+        "command": {
+          "$ref": "#/$defs/TaskCommand"
+        }
+      },
+      "required": [
+        "taskId",
+        "command"
+      ]
+    },
+    "TaskCommand": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "$ref": "#/$defs/TaskFields"
+            },
+            "kind": {
+              "type": "string",
+              "const": "update"
+            }
+          },
+          "required": [
+            "kind",
+            "fields"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/TaskStatus"
+            },
+            "kind": {
+              "type": "string",
+              "const": "changeStatus"
+            }
+          },
+          "required": [
+            "kind",
+            "status"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/TaskStatus"
+            },
+            "sortOrder": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "move"
+            }
+          },
+          "required": [
+            "kind",
+            "status",
+            "sortOrder"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "subtaskId": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "toggleSubtask"
+            }
+          },
+          "required": [
+            "kind",
+            "subtaskId"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "addSubtask"
+            }
+          },
+          "required": [
+            "kind",
+            "title"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "subtaskId": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "removeSubtask"
+            }
+          },
+          "required": [
+            "kind",
+            "subtaskId"
+          ]
+        }
+      ]
+    },
+    "TaskFields": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TaskStatus"
+        },
+        "targetDate": {
+          "type": "string"
+        },
+        "targetTime": {
+          "type": "string"
+        },
+        "estimateMinutes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "peopleIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "title",
+        "description",
+        "status",
+        "targetDate",
+        "targetTime",
+        "estimateMinutes",
+        "projectId",
+        "peopleIds",
+        "tags"
+      ]
+    },
+    "CreateTaskInput": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "$ref": "#/$defs/TaskFields"
+        }
+      },
+      "required": [
+        "fields"
+      ]
+    },
+    "TaskMutationResult": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/SaveSourceResult"
+        },
+        "task": {
+          "$ref": "#/$defs/Task"
+        }
+      },
+      "required": [
+        "source",
+        "task"
+      ]
+    },
+    "DeleteTaskInput": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "taskId"
+      ]
+    },
+    "DeleteTaskResult": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/DeleteSourceResult"
+        },
+        "task": {
+          "$ref": "#/$defs/Task"
+        }
+      },
+      "required": [
+        "source",
+        "task"
+      ]
+    },
+    "RestoreTaskInput": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string"
+        },
+        "noteId": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "trashId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "taskId",
+        "noteId",
+        "sourceFile",
+        "trashId"
+      ]
+    },
+    "UpdatePersonInput": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string"
+        },
+        "fields": {
+          "$ref": "#/$defs/PersonFields"
+        }
+      },
+      "required": [
+        "noteId",
+        "fields"
+      ]
+    },
+    "PersonFields": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "birthday": {
+          "type": "string"
+        },
+        "birthplace": {
+          "type": "string"
+        },
+        "nationality": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/PersonStatus"
+        },
+        "alignments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relation": {
+          "$ref": "#/$defs/PersonRelation"
+        },
+        "knownFrom": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "company": {
+          "type": "string"
+        },
+        "departments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "location": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "met": {
+          "type": "string"
+        },
+        "metThrough": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "nickname",
+        "birthday",
+        "birthplace",
+        "nationality",
+        "status",
+        "alignments",
+        "relation",
+        "knownFrom",
+        "company",
+        "departments",
+        "location",
+        "avatar",
+        "tags",
+        "met",
+        "metThrough",
+        "body"
+      ]
+    },
+    "PersonStatus": {
+      "type": "string",
+      "enum": [
+        "active",
+        "former"
+      ]
+    },
+    "PersonRelation": {
+      "type": "string",
+      "enum": [
+        "positive",
+        "neutral",
+        "flirty",
+        "mixed",
+        "negative"
+      ]
+    },
+    "PersonMutationResult": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/SaveSourceResult"
+        },
+        "note": {
+          "$ref": "#/$defs/CatalogNote"
+        }
+      },
+      "required": [
+        "source",
+        "note"
+      ]
+    }
+  },
+  "x-castle-rpc-protocol-version": 1,
+  "x-castle-content-contract-version": 2
+}

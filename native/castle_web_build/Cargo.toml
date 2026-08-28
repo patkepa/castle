@@ -1,0 +1,17 @@
+[package]
+name = "castle-web-build"
+description = "Minimal static-site generator used by the Cloudflare web build"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "castle-web-build"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+castle-core = { path = "../castle_core" }
+clap.workspace = true

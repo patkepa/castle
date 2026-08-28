@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "castle://schemas/task",
+  "title": "Castle task record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "schema_version", "id", "status"],
+  "properties": {
+    "type": { "const": "task" },
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["todo", "in_progress", "blocked", "done"] },
+    "due_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "due_time": { "type": "string", "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
+    "estimate_minutes": { "type": "integer", "minimum": 1 },
+    "created": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T.+)?$" },
+    "completed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T.+)?$" },
+    "sort_order": { "type": "number", "minimum": 0 },
+    "description": { "type": "string", "minLength": 1 },
+    "people": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/wikiLink" } },
+    "project": { "$ref": "#/$defs/wikiLink" },
+    "tags": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "aliases": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "pinned": { "type": "boolean" }
+  },
+  "$defs": {
+    "wikiLink": { "type": "string", "pattern": "^\\[\\[[^\\]|]+(?:\\|[^\\]]+)?\\]\\]$" }
+  }
+}

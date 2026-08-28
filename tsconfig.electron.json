@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "types": ["node", "@electron-forge/plugin-vite/forge-vite-env"]
+  },
+  "include": [
+    "electron/**/*.ts",
+    "forge_config.ts",
+    "vite_main.config.ts",
+    "vite_preload.config.ts",
+    "vite_renderer.config.ts"
+  ]
+}

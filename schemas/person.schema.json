@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "castle://schemas/person",
+  "title": "Castle person record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "schema_version", "id", "name", "alignment", "relation", "known_from"],
+  "oneOf": [
+    {
+      "required": ["location"],
+      "not": { "required": ["locations"] }
+    },
+    {
+      "required": ["locations"],
+      "not": {
+        "anyOf": [
+          { "required": ["location"] },
+          { "required": ["coordinates"] }
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "type": { "const": "person" },
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "location": { "type": "string", "minLength": 1 },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "contains": {
+        "type": "object",
+        "required": ["primary"],
+        "properties": { "primary": { "const": true } }
+      },
+      "minContains": 1,
+      "maxContains": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "address"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "address": { "type": "string", "minLength": 1 },
+          "primary": { "type": "boolean" },
+          "coordinates": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["latitude", "longitude", "resolved_from"],
+            "properties": {
+              "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+              "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+              "resolved_from": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "coordinates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latitude", "longitude", "resolved_from"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "resolved_from": { "type": "string", "minLength": 1 }
+      }
+    },
+    "nickname": { "type": "string", "minLength": 1 },
+    "birthday": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "birthplace": { "type": "string", "minLength": 1 },
+    "nationality": { "type": "string", "minLength": 1 },
+    "status": { "const": "former" },
+    "alignment": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["acquaintance", "classmate", "close_friend", "coworker", "crush", "family", "former_friend", "friend", "partner", "unknown"] }
+    },
+    "relation": { "enum": ["positive", "neutral", "flirty", "mixed", "negative"] },
+    "known_from": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "company": { "type": "string", "minLength": 1 },
+    "profession": { "type": "string", "minLength": 1 },
+    "age_when_met": { "type": "integer", "minimum": 0 },
+    "met_date": { "type": "string", "minLength": 1 },
+    "department": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      ]
+    },
+    "avatar": { "type": "string", "minLength": 1 },
+    "tags": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "aliases": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "relation_to": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["person", "relation"],
+        "properties": {
+          "person": { "$ref": "#/$defs/wikiLink" },
+          "relation": { "enum": ["positive", "neutral", "flirty", "mixed", "negative", "friendly"] },
+          "relationship": { "enum": ["acquaintance", "child", "classmate", "close_friend", "coworker", "direct_report", "ex_partner", "family", "friend", "housemate", "manager", "parent", "partner", "sibling", "spouse"] }
+        }
+      }
+    },
+    "met": { "type": "string", "minLength": 1 },
+    "met_through": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "wikiLink": { "type": "string", "pattern": "^\\[\\[[^\\]|]+(?:\\|[^\\]]+)?\\]\\]$" }
+  }
+}
