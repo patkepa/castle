@@ -1,0 +1,13 @@
+[package]
+name = "castle-desktop"
+description = "Native GPUI desktop application for Castle"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+castle-runtime = { path = "../castle_runtime" }
+gpui.workspace = true

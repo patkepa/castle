@@ -111,6 +111,10 @@ impl CastleService {
         Arc::clone(&self.compilation)
     }
 
+    pub fn acknowledge_current_publication(&mut self) {
+        self.publication_base = None;
+    }
+
     pub fn publication_options(&self) -> (CompileOptions, SnapshotOptions) {
         (
             CompileOptions::new(&self.library_root, &self.repository_root)

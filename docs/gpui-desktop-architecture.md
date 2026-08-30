@@ -1,6 +1,6 @@
 # GPUI desktop migration architecture
 
-Status: proposed  
+Status: accepted; Milestone 0 implementation in progress
 Target: replace Castle's Electron desktop application with a native Rust and GPUI application  
 Web target: remains the existing React application
 
@@ -88,9 +88,8 @@ flowchart LR
 
 ### Rust crates
 
-The accepted prototype currently lives in a standalone `gpui/` workspace. The
-first foundation milestone should move it into the native workspace and give
-the layers stable names:
+The accepted prototype has moved into the native workspace and the first
+foundation milestone is establishing these stable layers:
 
 ```text
 native/
@@ -283,8 +282,9 @@ castle_desktop/src/
     settings/
 ```
 
-The current single `ui.rs` should be split at the start of the next feature
-slice. Each feature owns:
+The prototype theme and route have been separated from `ui.rs`; the remaining
+shell and Library code should be split as the foundation work continues. Each
+feature owns:
 
 - its GPUI model and actions;
 - pure selectors and presentation structs;
@@ -561,18 +561,19 @@ Electron can be removed when all of the following are true:
 The next implementation slice should establish the foundation before adding
 more screens:
 
-1. Create `castle_runtime` with `SessionEpoch`, `AppSnapshot`, typed commands,
-   runtime events, and a serial `CastleService` worker.
-2. Move `gpui/` to `native/castle_desktop/`, configure explicit desktop CI, and
-   keep it out of default non-desktop workspace builds where necessary.
-3. Replace `DemoLibrary` with the runtime snapshot and lookup indexes.
-4. Split the prototype's `ui.rs` into theme, shell, router, common controls, and
-   `features/library`.
-5. Replace global keystroke capture with focused GPUI actions and input state.
-6. Add library switching and stale-epoch tests before implementing writes.
-7. Build the Markdown reader spike, followed by the editor/IME spike; record the
-   results and dependencies as architecture decisions before committing to the
-   remaining feature schedule.
+- [x] Create `castle_runtime` with `SessionEpoch`, `AppSnapshot`, typed commands,
+  runtime events, and a serial `CastleService` worker.
+- [x] Move the GPUI crate to `native/castle_desktop/`, add explicit desktop
+  commands, and keep it out of default non-desktop workspace builds.
+- [x] Replace `DemoLibrary` with the runtime snapshot and lookup indexes.
+- [ ] Finish splitting the prototype's shell and Library code. Theme and typed
+  routing are already separate from `ui.rs`.
+- [ ] Replace global keystroke capture with focused GPUI actions and input state.
+- [ ] Add library switching, filesystem watching, and stale-epoch race tests
+  before exposing writes in the UI.
+- [ ] Build the Markdown reader spike, followed by the editor/IME spike; record
+  the results and dependencies as architecture decisions before committing to
+  the remaining feature schedule.
 
 This ordering turns the current visual prototype into a durable application
 base while keeping every subsequent feature migration isolated, testable, and

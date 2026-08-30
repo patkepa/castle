@@ -1,8 +1,11 @@
+mod route;
+mod theme;
 mod ui;
 
 use std::{env, path::PathBuf};
 
-use castle_gpui::{DemoLibrary, parse_library_override};
+use castle_desktop::parse_startup_options;
+use castle_runtime::{LibrarySession, configured_session_options};
 use gpui::{
     App, AppContext, Application, Bounds, SharedString, TitlebarOptions, WindowBounds,
     WindowOptions, px, size,
@@ -11,12 +14,15 @@ use ui::CastleApp;
 
 fn main() {
     let repository_root = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let library_override = parse_library_override(env::args().skip(1))
-        .map_err(|error| SharedString::from(error.to_string()));
-    let library = library_override.and_then(|override_path| {
-        DemoLibrary::load(&repository_root, override_path.as_deref())
-            .map_err(|error| SharedString::from(format!("{error:#}")))
-    });
+    let runtime = parse_startup_options(env::args().skip(1))
+        .and_then(|startup| {
+            let cache_root = startup
+                .cache
+                .unwrap_or_else(|| repository_root.join("native/target/castle-desktop-cache"));
+            configured_session_options(&repository_root, startup.library.as_deref(), cache_root)
+        })
+        .map(LibrarySession::spawn)
+        .map_err(|error| SharedString::from(format!("{error:#}")));
 
     Application::new().run(move |cx: &mut App| {
         let bounds = Bounds::centered(None, size(px(1240.0), px(800.0)), cx);
@@ -30,7 +36,7 @@ fn main() {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     ..Default::default()
                 },
-                |_, cx| cx.new(|_| CastleApp::new(library)),
+                |_, cx| cx.new(|cx| CastleApp::new(runtime, cx)),
             )
             .expect("failed to open Castle's GPUI window");
         let view = window

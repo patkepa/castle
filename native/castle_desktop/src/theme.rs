@@ -1,0 +1,13 @@
+pub(crate) const CANVAS: u32 = 0x080808;
+pub(crate) const NAV: u32 = 0x060606;
+pub(crate) const PANEL: u32 = 0x0d0d0d;
+pub(crate) const RAISED: u32 = 0x111111;
+pub(crate) const HOVER: u32 = 0x151515;
+pub(crate) const ACTIVE: u32 = 0x191919;
+pub(crate) const LINE_SOFT: u32 = 0x1a1a1a;
+pub(crate) const LINE: u32 = 0x2a2a2a;
+pub(crate) const TEXT: u32 = 0xffffff;
+pub(crate) const TEXT_SECONDARY: u32 = 0xd7d7d7;
+pub(crate) const MUTED: u32 = 0xa8a8a8;
+pub(crate) const ACCENT: u32 = 0x4f91df;
+pub(crate) const ACCENT_HOVER: u32 = 0x68a4ef;

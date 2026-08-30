@@ -5,6 +5,10 @@ This workspace is the content backend for Castle.
 - `castle_core` compiles the Markdown library into typed projections, validates
   Castle Records, resolves Obsidian links, writes content-addressed snapshots,
   and implements transactional source mutations.
+- `castle_runtime` owns the in-process desktop library session, serializes
+  commands, and publishes epoch-scoped snapshots and content events.
+- `castle_desktop` is the native GPUI application. It is an explicit workspace
+  target rather than a default member because GPUI has a platform build stack.
 - `castle_cli` exposes `build`, `validate`, and the persistent Electron
   `daemon`.
 
@@ -19,7 +23,8 @@ Run these from `castle/`:
 ```sh
 cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- build
 cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- validate
-cargo test --manifest-path native/Cargo.toml --workspace
+cargo test --manifest-path native/Cargo.toml --workspace --exclude castle-desktop
+cargo test --manifest-path native/Cargo.toml -p castle-runtime -p castle-desktop
 ```
 
 `build` reads its default library and repository paths from `CONFIGURATION.md`

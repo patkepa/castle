@@ -51,10 +51,11 @@ The explicit web commands are `npm run dev:web`, `npm run build:web`, and
 `npm run deploy:web`. The existing `dev`, `build`, and `deploy` commands remain
 compatible aliases.
 
-Castle is evaluating a native Rust and GPUI replacement for the Electron
-desktop target. The accepted prototype lives in `gpui/`; the proposed runtime
-boundaries, feature milestones, safety rules, and Electron cutover criteria are
-in the [GPUI desktop migration architecture](docs/gpui-desktop-architecture.md).
+Castle is implementing a native Rust and GPUI replacement for the Electron
+desktop target. The native application lives in `native/castle_desktop/`, with
+its application/session layer in `native/castle_runtime/`. Runtime boundaries,
+feature milestones, safety rules, and Electron cutover criteria are in the
+[GPUI desktop migration architecture](docs/gpui-desktop-architecture.md).
 
 Cloudflare's default build image supplies Node but not Rust, while Castle's
 content and contract generators are Rust programs. Set the Cloudflare build

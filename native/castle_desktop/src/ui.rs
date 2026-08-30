@@ -1,22 +1,15 @@
-use castle_gpui::{DemoFolder, DemoLibrary, DemoNote, DemoSection};
+use std::sync::{Arc, Mutex, mpsc::Receiver};
+
+use castle_runtime::{
+    AppSnapshot, CatalogNote, LibraryFolder, LibrarySession, RuntimeEvent, SectionSummary,
+    ServiceStatusKind,
+};
 use gpui::{
     AnyElement, Context, FontWeight, IntoElement, Keystroke, Render, SharedString, Window, div,
     prelude::*, px, rgb,
 };
 
-const CANVAS: u32 = 0x080808;
-const NAV: u32 = 0x060606;
-const PANEL: u32 = 0x0d0d0d;
-const RAISED: u32 = 0x111111;
-const HOVER: u32 = 0x151515;
-const ACTIVE: u32 = 0x191919;
-const LINE_SOFT: u32 = 0x1a1a1a;
-const LINE: u32 = 0x2a2a2a;
-const TEXT: u32 = 0xffffff;
-const TEXT_SECONDARY: u32 = 0xd7d7d7;
-const MUTED: u32 = 0xa8a8a8;
-const ACCENT: u32 = 0x4f91df;
-const ACCENT_HOVER: u32 = 0x68a4ef;
+use crate::{route::Route, theme::*};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ViewMode {
@@ -24,18 +17,11 @@ enum ViewMode {
     Grid,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-enum Route {
-    Library {
-        section: Option<String>,
-        directory: Vec<String>,
-    },
-    Note(usize),
-    Placeholder(&'static str),
-}
-
 pub struct CastleApp {
-    library: Result<DemoLibrary, SharedString>,
+    session: Option<LibrarySession>,
+    library: Option<Arc<AppSnapshot>>,
+    library_error: Option<SharedString>,
+    library_status: SharedString,
     route: Route,
     view_mode: ViewMode,
     sidebar_collapsed: bool,
@@ -44,9 +30,47 @@ pub struct CastleApp {
 }
 
 impl CastleApp {
-    pub fn new(library: Result<DemoLibrary, SharedString>) -> Self {
+    pub fn new(
+        runtime: Result<(LibrarySession, Receiver<RuntimeEvent>), SharedString>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let (session, events, library_error) = match runtime {
+            Ok((session, events)) => (Some(session), Some(events), None),
+            Err(reason) => (None, None, Some(reason)),
+        };
+        if let Some(events) = events {
+            let events = Arc::new(Mutex::new(events));
+            let background = cx.background_executor().clone();
+            cx.spawn(async move |this, cx| {
+                loop {
+                    let events = Arc::clone(&events);
+                    let received = background
+                        .spawn(async move {
+                            events
+                                .lock()
+                                .expect("Castle runtime event receiver lock was poisoned")
+                                .recv()
+                        })
+                        .await;
+                    let Ok(event) = received else {
+                        break;
+                    };
+                    if this
+                        .update(&mut *cx, |this, cx| this.apply_runtime_event(event, cx))
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+            })
+            .detach();
+        }
+
         Self {
-            library,
+            session,
+            library: None,
+            library_error,
+            library_status: "Opening the Castle…".into(),
             route: Route::Library {
                 section: None,
                 directory: Vec::new(),
@@ -56,6 +80,35 @@ impl CastleApp {
             search_active: false,
             query: String::new(),
         }
+    }
+
+    fn apply_runtime_event(&mut self, event: RuntimeEvent, cx: &mut Context<Self>) {
+        let Some(session) = &self.session else {
+            return;
+        };
+        if event.epoch() != session.epoch() {
+            return;
+        }
+        match event {
+            RuntimeEvent::LibraryReady { snapshot, .. }
+            | RuntimeEvent::ContentChanged { snapshot, .. } => {
+                self.library = Some(snapshot);
+                self.library_error = None;
+            }
+            RuntimeEvent::ServiceStatus { status, .. } => {
+                self.library_status = status.message.clone().into();
+                match status.kind {
+                    ServiceStatusKind::Unavailable => {
+                        self.library_error = Some(status.message.into());
+                    }
+                    ServiceStatusKind::Ready | ServiceStatusKind::Opening => {
+                        self.library_error = None;
+                    }
+                    ServiceStatusKind::Stale | ServiceStatusKind::Stopped => {}
+                }
+            }
+        }
+        cx.notify();
     }
 
     pub fn handle_keystroke(&mut self, keystroke: &Keystroke, cx: &mut Context<Self>) {
@@ -177,7 +230,7 @@ impl CastleApp {
         }
 
         if !self.sidebar_collapsed
-            && let Ok(library) = &self.library
+            && let Some(library) = &self.library
         {
             navigation = navigation.child(self.sidebar_group_label("Recent"));
             for note_index in recent_note_indexes(library) {
@@ -386,8 +439,7 @@ impl CastleApp {
                 if let Some(section_id) = section {
                     let section_label = self
                         .library
-                        .as_ref()
-                        .ok()
+                        .as_deref()
                         .and_then(|library| library.section(section_id))
                         .map(|section| section.label.clone())
                         .unwrap_or_else(|| title_case(section_id));
@@ -422,7 +474,7 @@ impl CastleApp {
                 }
             }
             Route::Note(note_index) => {
-                if let Ok(library) = &self.library
+                if let Some(library) = &self.library
                     && let Some(note) = library.notes.get(*note_index)
                 {
                     breadcrumb = breadcrumb
@@ -439,7 +491,7 @@ impl CastleApp {
                             note.section_label.clone(),
                             Route::Library {
                                 section: Some(note.section.clone()),
-                                directory: note.directory(),
+                                directory: note_directory(note),
                             },
                             cx,
                         ))
@@ -481,7 +533,7 @@ impl CastleApp {
             _ => (None, &[] as &[String]),
         };
         let title = section
-            .and_then(|id| self.library.as_ref().ok()?.section(id))
+            .and_then(|id| self.library.as_deref()?.section(id))
             .map(|section| section.label.clone())
             .unwrap_or_else(|| "All collections".into());
         let eyebrow = if directory.is_empty() {
@@ -643,12 +695,11 @@ impl CastleApp {
                         let destination = match &this.route {
                             Route::Note(index) => this
                                 .library
-                                .as_ref()
-                                .ok()
+                                .as_deref()
                                 .and_then(|library| library.notes.get(*index))
                                 .map(|note| Route::Library {
                                     section: Some(note.section.clone()),
-                                    directory: note.directory(),
+                                    directory: note_directory(note),
                                 })
                                 .unwrap_or(Route::Library {
                                     section: None,
@@ -686,8 +737,8 @@ impl CastleApp {
     }
 
     fn render_content(&self, cx: &mut Context<Self>) -> AnyElement {
-        match &self.library {
-            Err(message) => div()
+        if let Some(message) = &self.library_error {
+            return div()
                 .h_full()
                 .flex_1()
                 .flex()
@@ -704,20 +755,40 @@ impl CastleApp {
                         .text_color(rgb(MUTED))
                         .child(message.clone()),
                 )
+                .into_any_element();
+        }
+        let Some(library) = &self.library else {
+            return div()
+                .h_full()
+                .flex_1()
+                .flex()
+                .flex_col()
+                .items_center()
+                .justify_center()
+                .gap_3()
+                .bg(rgb(CANVAS))
+                .text_color(rgb(TEXT))
+                .child(div().text_2xl().child("Opening the Castle…"))
+                .child(
+                    div()
+                        .text_sm()
+                        .text_color(rgb(MUTED))
+                        .child(self.library_status.clone()),
+                )
+                .into_any_element();
+        };
+        match &self.route {
+            Route::Library { section, directory } => self
+                .render_library(library, section.as_deref(), directory, cx)
                 .into_any_element(),
-            Ok(library) => match &self.route {
-                Route::Library { section, directory } => self
-                    .render_library(library, section.as_deref(), directory, cx)
-                    .into_any_element(),
-                Route::Note(note_index) => self.render_note(library, *note_index),
-                Route::Placeholder(label) => self.render_placeholder(label).into_any_element(),
-            },
+            Route::Note(note_index) => self.render_note(library, *note_index),
+            Route::Placeholder(label) => self.render_placeholder(label).into_any_element(),
         }
     }
 
     fn render_library(
         &self,
-        library: &DemoLibrary,
+        library: &AppSnapshot,
         section_id: Option<&str>,
         directory: &[String],
         cx: &mut Context<Self>,
@@ -825,7 +896,7 @@ impl CastleApp {
 
     fn render_sections(
         &self,
-        sections: &[DemoSection],
+        sections: &[SectionSummary],
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let mut container = match self.view_mode {
@@ -842,7 +913,7 @@ impl CastleApp {
         container
     }
 
-    fn section_tile(&self, section: &DemoSection, cx: &mut Context<Self>) -> impl IntoElement {
+    fn section_tile(&self, section: &SectionSummary, cx: &mut Context<Self>) -> impl IntoElement {
         let id = section.id.clone();
         let grid = self.view_mode == ViewMode::Grid;
         div()
@@ -896,7 +967,7 @@ impl CastleApp {
 
     fn render_entries(
         &self,
-        library: &DemoLibrary,
+        library: &AppSnapshot,
         section_id: &str,
         folders: &[usize],
         notes: &[usize],
@@ -925,7 +996,7 @@ impl CastleApp {
     fn folder_tile(
         &self,
         section_id: &str,
-        folder: &DemoFolder,
+        folder: &LibraryFolder,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let destination = Route::Library {
@@ -964,7 +1035,7 @@ impl CastleApp {
 
     fn note_tile(
         &self,
-        note: &DemoNote,
+        note: &CatalogNote,
         note_index: usize,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
@@ -1107,7 +1178,7 @@ impl CastleApp {
             )
     }
 
-    fn render_note(&self, library: &DemoLibrary, note_index: usize) -> AnyElement {
+    fn render_note(&self, library: &AppSnapshot, note_index: usize) -> AnyElement {
         let Some(note) = library.notes.get(note_index) else {
             return div().child("Note not found").into_any_element();
         };
@@ -1158,7 +1229,12 @@ impl CastleApp {
                             .text_base()
                             .line_height(px(28.0))
                             .text_color(rgb(TEXT_SECONDARY))
-                            .child(note.markdown.clone()),
+                            .child(
+                                library
+                                    .note_markdown(note_index)
+                                    .unwrap_or_default()
+                                    .to_owned(),
+                            ),
                     )
                     .child(
                         div()
@@ -1230,30 +1306,7 @@ impl Render for CastleApp {
     }
 }
 
-impl Route {
-    fn nav_key(&self) -> &'static str {
-        match self {
-            Self::Library { .. } | Self::Note(_) => "library",
-            Self::Placeholder("Home") => "home",
-            Self::Placeholder("People") => "people",
-            Self::Placeholder("Tasks") => "tasks",
-            Self::Placeholder("Calendar") => "calendar",
-            Self::Placeholder("Canvas") => "canvas",
-            Self::Placeholder("Stash") => "stash",
-            Self::Placeholder(_) => "",
-        }
-    }
-
-    fn is_library(&self) -> bool {
-        matches!(self, Self::Library { .. })
-    }
-
-    fn is_note(&self) -> bool {
-        matches!(self, Self::Note(_))
-    }
-}
-
-fn recent_note_indexes(library: &DemoLibrary) -> Vec<usize> {
+fn recent_note_indexes(library: &AppSnapshot) -> Vec<usize> {
     let mut indexes = (0..library.notes.len()).collect::<Vec<_>>();
     indexes.sort_by(|left, right| {
         library.notes[*right]
@@ -1289,11 +1342,21 @@ fn title_case(value: &str) -> String {
     }
 }
 
+fn note_directory(note: &CatalogNote) -> Vec<String> {
+    let mut parts = note
+        .relative_path
+        .split('/')
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    parts.pop();
+    parts
+}
+
 fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
     if count == 1 { singular } else { plural }
 }
 
-fn note_search_text(note: &DemoNote) -> String {
+fn note_search_text(note: &CatalogNote) -> String {
     format!(
         "{} {} {} {}",
         note.title,

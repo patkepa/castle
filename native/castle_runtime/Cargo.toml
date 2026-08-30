@@ -1,0 +1,16 @@
+[package]
+name = "castle-runtime"
+description = "Long-lived native application runtime for Castle desktop clients"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+castle-contracts = { path = "../castle_contracts" }
+castle-core = { path = "../castle_core" }
+
+[dev-dependencies]
+tempfile.workspace = true
