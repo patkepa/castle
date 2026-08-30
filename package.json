@@ -21,6 +21,8 @@
     "dev": "npm run generate && vite --host 127.0.0.1",
     "dev:web": "npm run dev",
     "dev:desktop": "npm run generate && electron-forge start",
+    "dev:gpui": "cargo run --manifest-path gpui/Cargo.toml",
+    "check:gpui": "cargo test --manifest-path gpui/Cargo.toml && cargo clippy --manifest-path gpui/Cargo.toml --all-targets -- -D warnings",
     "typecheck": "tsc --noEmit && tsc -p config/typescript/scripts.json && tsc -p config/typescript/electron.json",
     "check:architecture": "node scripts/check-architecture.mjs",
     "format:check": "cargo fmt --manifest-path native/Cargo.toml --all --check",

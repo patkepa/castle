@@ -17,3 +17,4 @@ src/generated/content.json
 
 # Rust
 native/target/
+gpui/target/
