@@ -8,8 +8,12 @@ checks do not need to compile GPUI.
 The prototype currently proves that a GPUI window can:
 
 - load Castle's real configuration and Markdown library through `castle-core`;
-- render native three-pane navigation, note lists, and a reading surface;
-- switch sections and notes without a browser, Vite, React, Electron, or IPC;
+- reproduce Castle's dark Kantzen workspace shell, collapsible navigation,
+  breadcrumb chrome, recent notes, and Library toolbar;
+- browse the collection index, nested folders, and notes in native list or grid
+  modes, with lightweight keyboard filtering after clicking the filter field;
+- open notes in a Castle-styled reading surface without a browser, Vite, React,
+  Electron, or IPC;
 - accept a different library with `--library /absolute/path/to/library`.
 
 Run it from the repository root:
@@ -36,9 +40,11 @@ crates; incremental builds are much faster.
 ## Current boundary
 
 This is a feasibility spike, not a replacement desktop release. Note bodies are
-shown as source Markdown. Editing, rich Markdown, search, canvases, sheets,
-calendar/tasks/projects, AI chat, filesystem watching, persistence, menus,
-shortcuts, accessibility QA, packaging, and parity tests remain unported.
+shown as source Markdown. Editing, rich Markdown, full search and command
+palette behavior, canvases, sheets, calendar/tasks/projects, AI chat,
+filesystem watching, persistence, menus, shortcuts, accessibility QA,
+packaging, and parity tests remain unported. Non-Library sidebar destinations
+are intentional roadmap placeholders.
 
 ## Early assessment
 

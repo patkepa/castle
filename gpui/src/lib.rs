@@ -7,6 +7,7 @@ use castle_core::{CompileOptions, compile_library, load_castle_configuration};
 pub struct DemoSection {
     pub id: String,
     pub label: String,
+    pub icon: String,
     pub count: usize,
 }
 
@@ -14,11 +15,23 @@ pub struct DemoSection {
 pub struct DemoNote {
     pub id: String,
     pub section: String,
+    pub section_label: String,
     pub title: String,
     pub excerpt: String,
     pub markdown: String,
+    pub relative_path: String,
+    pub modified_at: String,
+    pub tags: Vec<String>,
     pub reading_minutes: usize,
     pub word_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DemoFolder {
+    pub section: String,
+    pub directory: Vec<String>,
+    pub entry_count: usize,
+    pub note_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,6 +39,7 @@ pub struct DemoLibrary {
     pub name: String,
     pub root: PathBuf,
     pub sections: Vec<DemoSection>,
+    pub folders: Vec<DemoFolder>,
     pub notes: Vec<DemoNote>,
 }
 
@@ -54,8 +68,12 @@ impl DemoLibrary {
                 markdown: note_content.remove(&note.id).unwrap_or_default(),
                 id: note.id,
                 section: note.section,
+                section_label: note.section_label,
                 title: note.title,
                 excerpt: note.excerpt,
+                relative_path: note.relative_path,
+                modified_at: note.modified_at,
+                tags: note.tags,
                 reading_minutes: note.reading_minutes,
                 word_count: note.word_count,
             })
@@ -67,7 +85,19 @@ impl DemoLibrary {
             .map(|section| DemoSection {
                 id: section.id,
                 label: section.label,
+                icon: section.icon,
                 count: section.count,
+            })
+            .collect();
+        let folders = compilation
+            .knowledge_base
+            .folders
+            .into_iter()
+            .map(|folder| DemoFolder {
+                section: folder.section_id,
+                directory: folder.directory,
+                entry_count: folder.entry_count,
+                note_count: folder.note_count,
             })
             .collect();
 
@@ -83,6 +113,7 @@ impl DemoLibrary {
             name,
             root: canonical_root,
             sections,
+            folders,
             notes,
         })
     }
@@ -94,6 +125,44 @@ impl DemoLibrary {
             .filter(|(_, note)| section.is_none_or(|section| note.section == section))
             .map(|(index, _)| index)
             .collect()
+    }
+
+    pub fn notes_in_directory(&self, section: &str, directory: &[String]) -> Vec<usize> {
+        self.notes
+            .iter()
+            .enumerate()
+            .filter(|(_, note)| note.section == section && note.directory().as_slice() == directory)
+            .map(|(index, _)| index)
+            .collect()
+    }
+
+    pub fn folders_in_directory(&self, section: &str, directory: &[String]) -> Vec<usize> {
+        self.folders
+            .iter()
+            .enumerate()
+            .filter(|(_, folder)| {
+                folder.section == section
+                    && folder.directory.len() == directory.len() + 1
+                    && folder.directory.starts_with(directory)
+            })
+            .map(|(index, _)| index)
+            .collect()
+    }
+
+    pub fn section(&self, id: &str) -> Option<&DemoSection> {
+        self.sections.iter().find(|section| section.id == id)
+    }
+}
+
+impl DemoNote {
+    pub fn directory(&self) -> Vec<String> {
+        let mut parts = self
+            .relative_path
+            .split('/')
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        parts.pop();
+        parts
     }
 }
 
@@ -139,6 +208,7 @@ mod tests {
             name: "Demo".into(),
             root: PathBuf::from("/demo"),
             sections: Vec::new(),
+            folders: Vec::new(),
             notes: vec![
                 note("one", "notes"),
                 note("two", "people"),
@@ -154,11 +224,51 @@ mod tests {
         DemoNote {
             id: id.into(),
             section: section.into(),
+            section_label: section.into(),
             title: id.into(),
             excerpt: String::new(),
             markdown: String::new(),
+            relative_path: format!("{id}.md"),
+            modified_at: String::new(),
+            tags: Vec::new(),
             reading_minutes: 0,
             word_count: 0,
         }
+    }
+
+    #[test]
+    fn resolves_direct_directory_contents() {
+        let mut library = DemoLibrary {
+            name: "Demo".into(),
+            root: PathBuf::from("/demo"),
+            sections: Vec::new(),
+            folders: vec![
+                DemoFolder {
+                    section: "notes".into(),
+                    directory: vec!["work".into()],
+                    entry_count: 2,
+                    note_count: 1,
+                },
+                DemoFolder {
+                    section: "notes".into(),
+                    directory: vec!["work".into(), "archive".into()],
+                    entry_count: 1,
+                    note_count: 1,
+                },
+            ],
+            notes: vec![note("root", "notes"), note("nested", "notes")],
+        };
+        library.notes[1].relative_path = "work/nested.md".into();
+
+        assert_eq!(library.folders_in_directory("notes", &[]), vec![0]);
+        assert_eq!(
+            library.folders_in_directory("notes", &["work".into()]),
+            vec![1]
+        );
+        assert_eq!(library.notes_in_directory("notes", &[]), vec![0]);
+        assert_eq!(
+            library.notes_in_directory("notes", &["work".into()]),
+            vec![1]
+        );
     }
 }
