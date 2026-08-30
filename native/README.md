@@ -23,10 +23,10 @@ is introduced.
 Run these from `castle/`:
 
 ```sh
-cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- build
-cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- validate
-cargo test --manifest-path native/Cargo.toml --workspace --exclude castle-desktop
-cargo test --manifest-path native/Cargo.toml -p castle-runtime -p castle-desktop
+cargo xtask build native --release
+cargo xtask validate
+cargo xtask test native
+cargo xtask check desktop
 ```
 
 `build` reads its default library and repository paths from `CONFIGURATION.md`

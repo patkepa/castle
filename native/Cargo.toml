@@ -8,6 +8,7 @@ members = [
     "castle_mcp",
     "castle_cli",
     "castle_web_build",
+    "xtask",
 ]
 default-members = [
     "castle_contracts",

@@ -719,7 +719,7 @@ mod tests {
         assert_eq!(
             checked_in,
             contract_schema(),
-            "run npm run generate:contracts"
+            "run cargo xtask generate contracts"
         );
     }
 }

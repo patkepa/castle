@@ -20,7 +20,7 @@ Castle requires Node.js, npm, and Rust 1.90 or newer.
 
 ```sh
 npm install
-npm run dev
+cargo xtask run web
 ```
 
 A fresh checkout opens the synthetic, publish-safe library in
@@ -29,6 +29,20 @@ A fresh checkout opens the synthetic, publish-safe library in
 by Git and can contain machine-specific paths or a private owner identity.
 Command-line `--library` and `--repository` flags override the configured paths
 when supplied.
+
+Repository workflows are collected under `cargo xtask`. The native GPUI
+desktop app is the default build and run target:
+
+```sh
+cargo xtask build
+cargo xtask run -- --library /path/to/library
+cargo xtask check desktop
+```
+
+Use `cargo xtask --help` to discover the web, native engine, generation,
+validation, migration, Electron packaging, and deployment tasks. The existing
+`npm run ...` commands remain compatibility aliases for automation and older
+checkouts, but delegate their orchestration to xtask.
 
 `CONFIGURATION.md` controls the desktop application name and bundle ID, default
 library and repository paths, and the optional owner note, label, and avatar
@@ -47,9 +61,9 @@ target is a static, read-only application deployed behind Cloudflare Access.
 The Electron target edits source Markdown and provides interactive record
 operations without adding write capabilities to the web deployment.
 
-The explicit web commands are `npm run dev:web`, `npm run build:web`, and
-`npm run deploy:web`. The existing `dev`, `build`, and `deploy` commands remain
-compatible aliases.
+The explicit web commands are `cargo xtask run web`, `cargo xtask build web`,
+and `cargo xtask deploy web`. The existing npm commands remain compatible
+aliases.
 
 Castle is implementing a native Rust and GPUI replacement for the Electron
 desktop target. The native application lives in `native/castle_desktop/`, with
@@ -66,8 +80,9 @@ desktop-only index, embedding, and MCP dependencies. The first build can still
 take longer while Cargo compiles that generator and its content-engine
 dependencies.
 
-The desktop shell uses `npm run dev:desktop`, `npm run package:desktop`, and
-`npm run make:desktop`. Packaged builds use a
+The legacy Electron shell uses `cargo xtask run electron`,
+`cargo xtask package electron`, and `cargo xtask package electron --make`.
+The corresponding npm commands remain aliases. Packaged builds use a
 sandboxed renderer, a context-isolated preload, a private `castle://` asset
 protocol, sender-validated IPC, and strict Electron fuse configuration. The
 desktop app remembers a selected library and starts the packaged Rust content
@@ -175,12 +190,12 @@ release `castle` binary in the app resources directory.
 Useful native commands:
 
 ```sh
-npm run build:native
-npm run test:native
-npm run validate:library
-npm run migrate:records -- --json
+cargo xtask build native --release
+cargo xtask test native
+cargo xtask validate
+cargo xtask migrate -- --json
 # After reviewing the dry-run:
-npm run migrate:records -- --apply
+cargo xtask migrate -- --apply
 ```
 
 Rust 1.90 or newer is required to build Castle from source.
@@ -330,7 +345,7 @@ stable IDs while generating its catalog.
 Record schemas live under `castle/schemas/`. Validate the entire library with:
 
 ```sh
-npm run validate:library
+cargo xtask validate
 ```
 
 Validation rejects unknown record types and properties, duplicate or malformed
@@ -351,7 +366,7 @@ Frontmatter conventions:
 
 ```sh
 npm install
-npm run dev
+cargo xtask run web
 ```
 
 While the dev server is running, adding, editing, moving, or deleting any
@@ -503,11 +518,11 @@ make an API call.
 Run the sync directly after editing an address:
 
 ```sh
-npm run sync:person-locations
+cargo xtask generate person-locations
 ```
 
 To check coordinate freshness without changing Markdown, run
-`npm run check:person-locations`.
+`cargo xtask generate person-locations --check`.
 
 Treat `coordinates` as generated metadata: edit `location` or a location
 entry's `address`, then let the sync replace the matching coordinate block. A
@@ -681,7 +696,7 @@ production hostname with Cloudflare Access and verify in a signed-out browser
 window that the hostname redirects to the Access login page.
 
 ```sh
-CASTLE_PRODUCTION_URL=https://notes.example.com npm run deploy
+CASTLE_PRODUCTION_URL=https://notes.example.com cargo xtask deploy web
 ```
 
 The deployment check makes an unauthenticated request to the production URL and

@@ -180,7 +180,7 @@ export async function syncPersonLocations({
 
   if (staleLocations.length > 0 && !apiKey) {
     throw new Error(
-      `${staleLocations.length} person location${staleLocations.length === 1 ? " needs" : "s need"} updated coordinates. Set GOOGLE_MAPS_API_KEY in castle/.env, then rerun npm run sync:person-locations.`,
+      `${staleLocations.length} person location${staleLocations.length === 1 ? " needs" : "s need"} updated coordinates. Set GOOGLE_MAPS_API_KEY in castle/.env, then rerun cargo xtask generate person-locations.`,
     );
   }
 
@@ -258,7 +258,7 @@ export function personLocationCheckError(staleCount, removableCount) {
   return (
     `Person coordinates are not current: ${staleCount} location${staleCount === 1 ? " needs" : "s need"} geocoding` +
     `${removableCount > 0 ? ` and ${removableCount} obsolete coordinate block${removableCount === 1 ? " needs" : "s need"} removal` : ""}. ` +
-    "Run npm run sync:person-locations, review the Markdown changes, then validate again."
+    "Run cargo xtask generate person-locations, review the Markdown changes, then validate again."
   );
 }
 

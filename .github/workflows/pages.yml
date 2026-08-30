@@ -36,7 +36,7 @@ jobs:
         env:
           CASTLE_BASE_PATH: /${{ github.event.repository.name }}/
           VITE_CASTLE_ROUTER: hash
-        run: npm run build:web
+        run: cargo xtask build web
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
