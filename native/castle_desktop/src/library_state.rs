@@ -61,13 +61,6 @@ impl LibraryState {
         self.error = Some(reason);
     }
 
-    pub(crate) fn report_error(&mut self, reason: String) {
-        self.status = reason.clone();
-        if self.snapshot.is_none() {
-            self.error = Some(reason);
-        }
-    }
-
     pub(crate) fn snapshot(&self) -> Option<&Arc<AppSnapshot>> {
         self.snapshot.as_ref()
     }
@@ -120,18 +113,6 @@ mod tests {
         assert!(!state.apply(status_event(retired, "retired")));
         assert!(state.apply(status_event(active, "ready")));
         assert_eq!(state.status(), "ready");
-        assert!(state.error().is_none());
-    }
-
-    #[test]
-    fn picker_errors_do_not_retire_the_active_epoch() {
-        let active = SessionEpoch::next();
-        let mut state = LibraryState::new(Some(active), None);
-
-        state.report_error("picker failed".into());
-
-        assert!(state.apply(status_event(active, "still active")));
-        assert_eq!(state.status(), "still active");
         assert!(state.error().is_none());
     }
 }

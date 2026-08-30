@@ -1106,6 +1106,8 @@ dependencies = [
  "castle-contracts",
  "castle-core",
  "notify",
+ "serde",
+ "serde_json",
  "tempfile",
 ]
 

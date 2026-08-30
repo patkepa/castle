@@ -5,7 +5,8 @@ use std::{
 
 use castle_desktop::SessionLauncher;
 use castle_runtime::{
-    AppSnapshot, CatalogNote, LibraryFolder, LibrarySession, RuntimeEvent, SectionSummary,
+    AppSnapshot, CatalogNote, LibraryFolder, LibrarySession, RecentLibrary, RuntimeEvent,
+    SectionSummary,
 };
 use gpui::{
     AnyElement, Context, FontWeight, IntoElement, Keystroke, PathPromptOptions, Render,
@@ -24,6 +25,9 @@ pub struct CastleApp {
     launcher: SessionLauncher,
     session: Option<LibrarySession>,
     library_state: LibraryState,
+    recent_libraries: Vec<RecentLibrary>,
+    library_notice: Option<String>,
+    library_chooser_visible: bool,
     chooser_open: bool,
     switching_library: bool,
     route: Route,
@@ -36,6 +40,7 @@ pub struct CastleApp {
 impl CastleApp {
     pub fn new(
         launcher: SessionLauncher,
+        recent_libraries: anyhow::Result<Vec<RecentLibrary>>,
         runtime: Result<(LibrarySession, Receiver<RuntimeEvent>), SharedString>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -44,6 +49,10 @@ impl CastleApp {
             Err(reason) => (None, None, Some(reason.to_string())),
         };
         let active_epoch = session.as_ref().map(LibrarySession::epoch);
+        let (recent_libraries, library_notice) = match recent_libraries {
+            Ok(libraries) => (libraries, None),
+            Err(reason) => (Vec::new(), Some(format!("{reason:#}"))),
+        };
         if let Some(events) = events {
             Self::subscribe_to_runtime(events, cx);
         }
@@ -52,6 +61,9 @@ impl CastleApp {
             launcher,
             session,
             library_state: LibraryState::new(active_epoch, library_error),
+            recent_libraries,
+            library_notice,
+            library_chooser_visible: false,
             chooser_open: false,
             switching_library: false,
             route: Route::Library {
@@ -66,9 +78,50 @@ impl CastleApp {
     }
 
     fn apply_runtime_event(&mut self, event: RuntimeEvent, cx: &mut Context<Self>) {
+        let opened_library = match &event {
+            RuntimeEvent::LibraryReady { snapshot, .. } => Some(snapshot.library_root().to_owned()),
+            _ => None,
+        };
         if self.library_state.apply(event) {
+            if let Some(library_root) = opened_library {
+                self.remember_library(library_root, cx);
+            }
             cx.notify();
         }
+    }
+
+    fn remember_library(&self, library_root: PathBuf, cx: &mut Context<Self>) {
+        let launcher = self.launcher.clone();
+        let background = cx.background_executor().clone();
+        cx.spawn(async move |this, cx| {
+            let recents = background
+                .spawn(async move { launcher.remember_library(&library_root) })
+                .await;
+            let _ = this.update(&mut *cx, |this, cx| {
+                match recents {
+                    Ok(recents) => {
+                        this.recent_libraries = recents;
+                        this.library_notice = None;
+                    }
+                    Err(reason) => this.library_notice = Some(format!("{reason:#}")),
+                }
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    fn show_library_chooser(&mut self, cx: &mut Context<Self>) {
+        if self.switching_library {
+            return;
+        }
+        self.library_chooser_visible = true;
+        cx.notify();
+    }
+
+    fn hide_library_chooser(&mut self, cx: &mut Context<Self>) {
+        self.library_chooser_visible = false;
+        cx.notify();
     }
 
     fn subscribe_to_runtime(events: Receiver<RuntimeEvent>, cx: &mut Context<Self>) {
@@ -122,13 +175,13 @@ impl CastleApp {
                     }
                     Ok(Ok(None)) => cx.notify(),
                     Ok(Err(reason)) => {
-                        this.library_state.report_error(format!(
+                        this.library_notice = Some(format!(
                             "Castle could not open the library picker: {reason:#}"
                         ));
                         cx.notify();
                     }
                     Err(reason) => {
-                        this.library_state.report_error(format!(
+                        this.library_notice = Some(format!(
                             "Castle's library picker closed before replying: {reason}"
                         ));
                         cx.notify();
@@ -142,6 +195,8 @@ impl CastleApp {
 
     fn begin_library_switch(&mut self, path: PathBuf, cx: &mut Context<Self>) {
         self.switching_library = true;
+        self.library_chooser_visible = false;
+        self.library_notice = None;
         self.library_state.begin_switch(&path.to_string_lossy());
         self.route = Route::Library {
             section: None,
@@ -354,13 +409,15 @@ impl CastleApp {
                 .text_color(rgb(MUTED))
                 .cursor_pointer()
                 .hover(|style| style.bg(rgb(HOVER)).text_color(rgb(TEXT)))
-                .on_click(cx.listener(|this, _, _, cx| this.choose_library(cx)))
+                .on_click(cx.listener(|this, _, _, cx| this.show_library_chooser(cx)))
                 .child(if self.sidebar_collapsed {
                     "⇄".to_owned()
                 } else if self.switching_library {
                     "OPENING LIBRARY…".to_owned()
                 } else if self.chooser_open {
                     "CHOOSING LIBRARY…".to_owned()
+                } else if self.library_chooser_visible {
+                    "LIBRARY CHOOSER".to_owned()
                 } else {
                     "⇄  SWITCH LIBRARY".to_owned()
                 }),
@@ -821,26 +878,172 @@ impl CastleApp {
             .child(label)
     }
 
-    fn render_content(&self, cx: &mut Context<Self>) -> AnyElement {
-        if let Some(message) = self.library_state.error() {
-            return div()
-                .h_full()
-                .flex_1()
+    fn render_library_chooser(&self, message: Option<&str>, cx: &mut Context<Self>) -> AnyElement {
+        let has_open_library = self.library_state.snapshot().is_some();
+        let message = message.map(str::to_owned).unwrap_or_else(|| {
+            "Open a recent Markdown library or choose a folder on this Mac.".into()
+        });
+        let mut recent_list = div()
+            .mt_6()
+            .flex()
+            .flex_col()
+            .border_t_1()
+            .border_color(rgb(LINE));
+        for (index, library) in self.recent_libraries.iter().enumerate() {
+            let path = library.path.clone();
+            let available = library.available;
+            let mut row = div()
+                .id(SharedString::from(format!("recent-library-{index}")))
+                .min_h(px(62.0))
                 .flex()
-                .flex_col()
                 .items_center()
-                .justify_center()
-                .gap_3()
-                .bg(rgb(CANVAS))
+                .gap_4()
+                .px_4()
+                .border_b_1()
+                .border_color(rgb(LINE))
                 .text_color(rgb(TEXT))
-                .child(div().text_2xl().child("Castle could not open the library"))
                 .child(
                     div()
-                        .text_sm()
-                        .text_color(rgb(MUTED))
-                        .child(message.to_owned()),
+                        .size_8()
+                        .flex_none()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .border_1()
+                        .border_color(rgb(LINE))
+                        .text_color(rgb(if available { ACCENT_HOVER } else { MUTED }))
+                        .child("◇"),
                 )
-                .into_any_element();
+                .child(
+                    div()
+                        .min_w_0()
+                        .flex_1()
+                        .child(
+                            div()
+                                .truncate()
+                                .text_sm()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child(library.name.clone()),
+                        )
+                        .child(
+                            div()
+                                .mt_1()
+                                .truncate()
+                                .text_size(px(10.0))
+                                .text_color(rgb(MUTED))
+                                .child(library.path.display().to_string()),
+                        ),
+                )
+                .child(
+                    div()
+                        .text_size(px(9.0))
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(rgb(if available { MUTED } else { DANGER }))
+                        .child(if available { "OPEN" } else { "MISSING" }),
+                );
+            if available {
+                row = row
+                    .cursor_pointer()
+                    .hover(|style| style.bg(rgb(HOVER)))
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.begin_library_switch(path.clone(), cx);
+                    }));
+            }
+            recent_list = recent_list.child(row);
+        }
+
+        let mut actions = div().mt_6().flex().items_center().gap_3().child(
+            div()
+                .id("browse-library")
+                .h(px(36.0))
+                .flex()
+                .items_center()
+                .px_5()
+                .bg(rgb(ACCENT))
+                .cursor_pointer()
+                .text_sm()
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(rgb(TEXT))
+                .hover(|style| style.bg(rgb(ACCENT_HOVER)))
+                .on_click(cx.listener(|this, _, _, cx| this.choose_library(cx)))
+                .child("Browse for a library"),
+        );
+        if has_open_library {
+            actions = actions.child(
+                div()
+                    .id("cancel-library-chooser")
+                    .h(px(36.0))
+                    .flex()
+                    .items_center()
+                    .px_5()
+                    .border_1()
+                    .border_color(rgb(LINE))
+                    .cursor_pointer()
+                    .text_sm()
+                    .text_color(rgb(TEXT_SECONDARY))
+                    .hover(|style| style.bg(rgb(HOVER)).text_color(rgb(TEXT)))
+                    .on_click(cx.listener(|this, _, _, cx| this.hide_library_chooser(cx)))
+                    .child("Cancel"),
+            );
+        }
+
+        div()
+            .id("library-chooser-page")
+            .h_full()
+            .min_w_0()
+            .flex_1()
+            .overflow_y_scroll()
+            .bg(rgb(CANVAS))
+            .text_color(rgb(TEXT))
+            .child(
+                div()
+                    .max_w(px(680.0))
+                    .mx_auto()
+                    .px_10()
+                    .py_12()
+                    .child(
+                        div()
+                            .text_size(px(9.0))
+                            .font_weight(FontWeight::BOLD)
+                            .text_color(rgb(ACCENT_HOVER))
+                            .child("CASTLE LIBRARIES"),
+                    )
+                    .child(
+                        div()
+                            .mt_3()
+                            .text_size(px(42.0))
+                            .line_height(px(46.0))
+                            .font_weight(FontWeight::BOLD)
+                            .child(if has_open_library {
+                                "Open another library"
+                            } else {
+                                "Choose your library"
+                            }),
+                    )
+                    .child(
+                        div()
+                            .mt_3()
+                            .text_sm()
+                            .line_height(px(22.0))
+                            .text_color(rgb(MUTED))
+                            .child(message),
+                    )
+                    .when(!self.recent_libraries.is_empty(), |chooser| {
+                        chooser.child(recent_list)
+                    })
+                    .child(actions),
+            )
+            .into_any_element()
+    }
+
+    fn render_content(&self, cx: &mut Context<Self>) -> AnyElement {
+        if self.library_chooser_visible || self.library_state.error().is_some() {
+            return self.render_library_chooser(
+                self.library_state
+                    .error()
+                    .or(self.library_notice.as_deref()),
+                cx,
+            );
         }
         let Some(library) = self.library_state.snapshot() else {
             return div()

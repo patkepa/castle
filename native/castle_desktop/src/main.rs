@@ -21,6 +21,7 @@ fn main() {
         .and_then(|startup| startup.cache.clone())
         .unwrap_or_else(|| repository_root.join("native/target/castle-desktop-cache"));
     let launcher = SessionLauncher::new(&repository_root, cache_root);
+    let recent_libraries = launcher.recent_libraries();
     let runtime = startup
         .and_then(|startup| launcher.launch(startup.library.as_deref()))
         .map_err(|error| SharedString::from(format!("{error:#}")));
@@ -37,7 +38,7 @@ fn main() {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     ..Default::default()
                 },
-                |_, cx| cx.new(|cx| CastleApp::new(launcher, runtime, cx)),
+                |_, cx| cx.new(|cx| CastleApp::new(launcher, recent_libraries, runtime, cx)),
             )
             .expect("failed to open Castle's GPUI window");
         let view = window

@@ -24,7 +24,10 @@ The current implementation proves that a GPUI window can:
 - open notes in a Castle-styled reading surface without a browser, Vite, React,
   Electron, or IPC;
 - accept a different library with `--library /absolute/path/to/library` or
-  switch at runtime through the native directory chooser in the sidebar.
+  switch at runtime through the recent-library screen and native directory
+  chooser in the sidebar;
+- persist canonical recent-library paths atomically and surface missing folders
+  as unavailable choices without blocking another library from opening.
 
 Run it from the repository root:
 
@@ -58,8 +61,8 @@ This is an architecture foundation, not a replacement desktop release. Note
 bodies are shown as source Markdown. Editing, rich Markdown, full search and
 command palette behavior, canvases, sheets, calendar/tasks/projects, AI chat,
 persistence, menus, shortcuts, accessibility QA, packaging, and parity tests
-remain unported. Filesystem watching and native library switching are live;
-the recent-library registry and launch-time chooser state remain unported.
+remain unported. Filesystem watching, native library switching, the canonical
+recent-library registry, and the launch-time recovery chooser are live.
 Non-Library sidebar destinations are intentional roadmap placeholders.
 
 ## Early assessment

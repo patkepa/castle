@@ -4,12 +4,15 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use castle_runtime::{LibrarySession, RuntimeEvent, configured_session_options};
+use castle_runtime::{
+    LibraryRegistry, LibrarySession, RecentLibrary, RuntimeEvent, configured_session_options,
+};
 
 #[derive(Debug, Clone)]
 pub struct SessionLauncher {
     application_repository_root: PathBuf,
     cache_root: PathBuf,
+    library_registry: LibraryRegistry,
 }
 
 impl SessionLauncher {
@@ -17,9 +20,11 @@ impl SessionLauncher {
         application_repository_root: impl Into<PathBuf>,
         cache_root: impl Into<PathBuf>,
     ) -> Self {
+        let cache_root = cache_root.into();
         Self {
             application_repository_root: application_repository_root.into(),
-            cache_root: cache_root.into(),
+            library_registry: LibraryRegistry::new(cache_root.join("desktop-state")),
+            cache_root,
         }
     }
 
@@ -33,6 +38,14 @@ impl SessionLauncher {
             self.cache_root.clone(),
         )
         .map(LibrarySession::spawn)
+    }
+
+    pub fn recent_libraries(&self) -> Result<Vec<RecentLibrary>> {
+        self.library_registry.recent_libraries()
+    }
+
+    pub fn remember_library(&self, library_root: &Path) -> Result<Vec<RecentLibrary>> {
+        self.library_registry.remember(library_root)
     }
 }
 

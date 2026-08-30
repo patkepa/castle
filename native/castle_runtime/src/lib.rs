@@ -1,3 +1,5 @@
+mod library_registry;
+
 use std::{
     collections::HashMap,
     ops::Deref,
@@ -22,6 +24,8 @@ use castle_contracts::{
 };
 use castle_core::{CastleCompilation, CastleService, ServiceOptions};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
+
+pub use library_registry::{LibraryRegistry, RecentLibrary};
 
 const COMMAND_CAPACITY: usize = 64;
 const EVENT_CAPACITY: usize = 64;

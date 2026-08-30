@@ -11,3 +11,4 @@ pub(crate) const TEXT_SECONDARY: u32 = 0xd7d7d7;
 pub(crate) const MUTED: u32 = 0xa8a8a8;
 pub(crate) const ACCENT: u32 = 0x4f91df;
 pub(crate) const ACCENT_HOVER: u32 = 0x68a4ef;
+pub(crate) const DANGER: u32 = 0xe06c75;

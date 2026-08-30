@@ -248,8 +248,10 @@ The foundation now implements runtime switching through GPUI's native directory
 picker. Selection retires the active epoch before the previous actor shuts down;
 the replacement actor starts off the UI thread, and only its epoch is activated
 before its event receiver is attached. Overlapping chooser and switch requests
-are suppressed. Persisted recent libraries and the launch-time chooser remain
-future work.
+are suppressed. Successful `LibraryReady` events update an atomically persisted,
+canonical recent-library registry off the UI thread. Missing paths remain visible
+but unavailable, and startup failures enter the same in-app chooser used for
+manual switching.
 
 ## GPUI application architecture
 
@@ -587,8 +589,8 @@ more screens:
 - [ ] Replace global keystroke capture with focused GPUI actions and input state.
 - [x] Add the native directory chooser, serialized library session replacement,
   debounced filesystem watching, and stale-epoch rejection tests.
-- [ ] Add the canonical recent-library registry and launch-time chooser for
-  installations without a valid configured library.
+- [x] Add the canonical recent-library registry and launch-time recovery chooser
+  for installations without a valid configured library.
 - [ ] Build the Markdown reader spike, followed by the editor/IME spike; record
   the results and dependencies as architecture decisions before committing to
   the remaining feature schedule.
