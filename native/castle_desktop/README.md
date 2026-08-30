@@ -20,9 +20,11 @@ The current implementation proves that a GPUI window can:
 - reproduce Castle's dark Kantzen workspace shell, collapsible navigation,
   breadcrumb chrome, recent notes, and Library toolbar;
 - browse the collection index, nested folders, and notes in native list or grid
-  modes, with lightweight keyboard filtering after clicking the filter field;
-- open notes in a Castle-styled reading surface without a browser, Vite, React,
-  Electron, or IPC;
+  modes, with focused native filtering and `cmd-f` search focus;
+- read headings, paragraphs, lists, quotes, code, tables, links, local assets,
+  outlines, and backlinks in a Castle-styled surface without a web renderer;
+- load and edit source Markdown asynchronously, save with revision-conflict
+  protection, preserve failed drafts, and guard dirty navigation/window close;
 - accept a different library with `--library /absolute/path/to/library` or
   switch at runtime through the recent-library screen and native directory
   chooser in the sidebar;
@@ -32,12 +34,13 @@ The current implementation proves that a GPUI window can:
 Run it from the repository root:
 
 ```sh
-npm run dev:gpui
-# or
-cargo run --manifest-path native/Cargo.toml -p castle-desktop -- --library /path/to/library
+cargo xtask run
+# With an explicit library:
+cargo xtask run -- --library /path/to/library
 ```
 
-Validate the experiment with `npm run check:gpui`.
+Build it without launching with `cargo xtask build` (add `--release` for an
+optimized binary). Validate the experiment with `cargo xtask check desktop`.
 
 On macOS, GPUI compiles its own Metal shaders. If Xcode reports that the Metal
 toolchain is missing, install Apple's optional component once with:
@@ -57,19 +60,20 @@ development phase.
 
 ## Current boundary
 
-This is an architecture foundation, not a replacement desktop release. Note
-bodies are shown as source Markdown. Editing, rich Markdown, full search and
+This is an architecture foundation, not a replacement desktop release. The
+Markdown reader and revision-safe editing path are live spikes, but the source
+editor still needs undo/redo, precise pointer selection, accessibility QA, and
+large-document performance work before it is production-ready. Full search and
 command palette behavior, canvases, sheets, calendar/tasks/projects, AI chat,
-persistence, menus, shortcuts, accessibility QA, packaging, and parity tests
-remain unported. Filesystem watching, native library switching, the canonical
-recent-library registry, and the launch-time recovery chooser are live.
-Non-Library sidebar destinations are intentional roadmap placeholders.
+menus, packaging, and parity tests remain unported. Filesystem watching, native
+library switching, the canonical recent-library registry, and launch-time
+recovery are live. Non-Library sidebar destinations remain roadmap placeholders.
 
 ## Early assessment
 
 The architecture is viable: GPUI now calls the existing Rust content engine
 through an in-process, serial session instead of Electron's
 renderer/preload/main-process IPC chain. The costly part remains UI parity. The
-next gate is the complete Library vertical slice: rich Markdown reading, source
-editing, save validation, keyboard navigation, and live external-change
-refresh.
+next gate is hardening the complete Library vertical slice: production text
+editing behavior, keyboard navigation, virtualized large-library rendering, and
+fixture-based parity against the Electron reader.

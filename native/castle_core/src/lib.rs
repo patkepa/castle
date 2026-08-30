@@ -32,7 +32,9 @@ pub use migrations::{
     MigrationOutcome, MigrationPlan, MigrationSeverity, apply_record_migrations,
     plan_record_migrations,
 };
-pub use model::{BacklinkGroup, BacklinkOccurrence, CastleCompilation, CompilationStats, Heading};
+pub use model::{
+    BacklinkGroup, BacklinkOccurrence, CastleCompilation, CompilationStats, Heading, NoteContent,
+};
 pub use service::{
     CastleService, CompilationDelta, CreateFolderInput, CreateFolderResult, CreateSourceInput,
     DeleteFolderInput, DeleteFolderResult, DeleteSourceInput, DeleteSourceResult, MoveSourceInput,

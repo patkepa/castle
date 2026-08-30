@@ -1065,6 +1065,7 @@ dependencies = [
  "anyhow",
  "castle-runtime",
  "gpui",
+ "unicode-segmentation",
 ]
 
 [[package]]

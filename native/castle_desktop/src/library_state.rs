@@ -65,6 +65,10 @@ impl LibraryState {
         self.snapshot.as_ref()
     }
 
+    pub(crate) fn active_epoch(&self) -> Option<SessionEpoch> {
+        self.active_epoch
+    }
+
     pub(crate) fn error(&self) -> Option<&str> {
         self.error.as_deref()
     }

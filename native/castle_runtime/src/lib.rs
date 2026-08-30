@@ -14,17 +14,20 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow};
-pub use castle_contracts::{CatalogNote, KnowledgeBase, LibraryFolder, SectionSummary};
+pub use castle_contracts::{
+    CatalogNote, KnowledgeBase, LibraryFolder, SaveSourceInput, SaveSourceResult, SectionSummary,
+    SourceDocument,
+};
 use castle_contracts::{
     CompilationDelta, CreateFolderInput, CreateFolderResult, CreateSourceInput, CreateTaskInput,
     DeleteFolderInput, DeleteFolderResult, DeleteSourceInput, DeleteSourceResult, DeleteTaskInput,
     DeleteTaskResult, MoveSourceInput, MoveSourceResult, MutateTaskInput, PersonMutationResult,
-    RestoreSourceInput, RestoreTaskInput, SaveSourceInput, SaveSourceResult, ServiceState,
-    SourceDocument, TaskMutationResult, UpdatePersonInput,
+    RestoreSourceInput, RestoreTaskInput, ServiceState, TaskMutationResult, UpdatePersonInput,
 };
 use castle_core::{CastleCompilation, CastleService, ServiceOptions};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 
+pub use castle_core::{BacklinkGroup, BacklinkOccurrence, Heading, NoteContent};
 pub use library_registry::{LibraryRegistry, RecentLibrary};
 
 const COMMAND_CAPACITY: usize = 64;
@@ -186,6 +189,24 @@ impl AppSnapshot {
             .map(|resource| resource.content.content.as_str())
     }
 
+    pub fn note_content(&self, note_id: &str) -> Option<&NoteContent> {
+        let resource_index = self.note_resource_indexes_by_id.get(note_id)?;
+        self.compilation
+            .note_resources
+            .get(*resource_index)
+            .map(|resource| &resource.content)
+    }
+
+    pub fn asset_path(&self, source: &str) -> Option<PathBuf> {
+        let relative = source
+            .strip_prefix("/content-assets/")
+            .or_else(|| source.strip_prefix('/'))?;
+        let relative = decode_asset_path(relative)?;
+        let path = self.library_root().join(relative);
+        (self.compilation.asset_files.binary_search(&path).is_ok() && path.is_file())
+            .then_some(path)
+    }
+
     pub fn notes_in_section(&self, section: Option<&str>) -> Vec<usize> {
         self.notes
             .iter()
@@ -236,6 +257,47 @@ fn note_directory(note: &CatalogNote) -> Vec<String> {
         .collect::<Vec<_>>();
     parts.pop();
     parts
+}
+
+fn decode_asset_path(value: &str) -> Option<PathBuf> {
+    let mut path = PathBuf::new();
+    for component in value.split('/') {
+        if component.is_empty() || matches!(component, "." | "..") {
+            return None;
+        }
+        let bytes = component.as_bytes();
+        let mut decoded = Vec::with_capacity(bytes.len());
+        let mut index = 0;
+        while index < bytes.len() {
+            if bytes[index] == b'%' {
+                let high = *bytes.get(index + 1)?;
+                let low = *bytes.get(index + 2)?;
+                decoded.push(hex_value(high)? * 16 + hex_value(low)?);
+                index += 3;
+            } else {
+                decoded.push(bytes[index]);
+                index += 1;
+            }
+        }
+        let decoded = String::from_utf8(decoded).ok()?;
+        if decoded.is_empty()
+            || matches!(decoded.as_str(), "." | "..")
+            || decoded.contains(['/', '\\'])
+        {
+            return None;
+        }
+        path.push(decoded);
+    }
+    Some(path)
+}
+
+fn hex_value(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -395,6 +457,40 @@ pub struct LibrarySession {
     watcher: Option<thread::JoinHandle<()>>,
 }
 
+#[derive(Clone)]
+pub struct LibraryClient {
+    epoch: SessionEpoch,
+    commands: SyncSender<LibraryCommand>,
+}
+
+impl LibraryClient {
+    pub fn epoch(&self) -> SessionEpoch {
+        self.epoch
+    }
+
+    pub fn read_source(&self, note_id: impl Into<String>) -> Result<SourceDocument> {
+        self.request(|reply| LibraryCommand::ReadSource {
+            note_id: note_id.into(),
+            reply,
+        })
+    }
+
+    pub fn save_source(&self, input: SaveSourceInput) -> Result<SaveSourceResult> {
+        self.request(|reply| LibraryCommand::SaveSource { input, reply })
+    }
+
+    fn request<T>(&self, command: impl FnOnce(Reply<T>) -> LibraryCommand) -> Result<T> {
+        let (reply_sender, reply_receiver) = mpsc::channel();
+        self.commands
+            .send(command(reply_sender))
+            .map_err(|_| anyhow!("Castle's library session is not running."))?;
+        reply_receiver
+            .recv()
+            .map_err(|_| anyhow!("Castle's library session stopped before replying."))?
+            .map_err(anyhow::Error::msg)
+    }
+}
+
 impl LibrarySession {
     pub fn spawn(options: LibrarySessionOptions) -> (Self, Receiver<RuntimeEvent>) {
         let epoch = SessionEpoch::next();
@@ -440,6 +536,13 @@ impl LibrarySession {
 
     pub fn epoch(&self) -> SessionEpoch {
         self.epoch
+    }
+
+    pub fn client(&self) -> LibraryClient {
+        LibraryClient {
+            epoch: self.epoch,
+            commands: self.commands.clone(),
+        }
     }
 
     pub fn read_source(&self, note_id: impl Into<String>) -> Result<SourceDocument> {
@@ -966,6 +1069,17 @@ mod tests {
     }
 
     #[test]
+    fn asset_paths_reject_encoded_traversal() {
+        assert_eq!(
+            decode_asset_path("notes/My%20Image.png"),
+            Some(PathBuf::from("notes/My Image.png"))
+        );
+        assert!(decode_asset_path("%2E%2E/secret.png").is_none());
+        assert!(decode_asset_path("notes%2F..%2Fsecret.png").is_none());
+        assert!(decode_asset_path("notes/%ZZ.png").is_none());
+    }
+
+    #[test]
     fn opens_a_library_off_thread_and_indexes_its_snapshot() {
         let cache = tempfile::tempdir().unwrap();
         let repository = repository_root();
@@ -1005,7 +1119,9 @@ mod tests {
         );
         assert!(!snapshot.sections.is_empty());
 
-        let source = session.read_source(welcome.id.clone()).unwrap();
+        let client = session.client();
+        assert_eq!(client.epoch(), session.epoch());
+        let source = client.read_source(welcome.id.clone()).unwrap();
         assert!(source.markdown.contains("Welcome to Castle"));
         session.shutdown();
     }

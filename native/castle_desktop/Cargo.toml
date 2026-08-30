@@ -11,3 +11,4 @@ publish.workspace = true
 anyhow.workspace = true
 castle-runtime = { path = "../castle_runtime" }
 gpui.workspace = true
+unicode-segmentation.workspace = true

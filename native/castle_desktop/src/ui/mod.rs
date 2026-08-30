@@ -1,3 +1,11 @@
+mod actions;
+mod editor;
+mod library;
+mod markdown;
+mod notes;
+mod shell;
+mod text_input;
+
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex, mpsc::Receiver},
@@ -5,25 +13,28 @@ use std::{
 
 use castle_desktop::SessionLauncher;
 use castle_runtime::{
-    AppSnapshot, CatalogNote, LibraryFolder, LibrarySession, RecentLibrary, RuntimeEvent,
-    SectionSummary,
+    AppSnapshot, CatalogNote, LibraryClient, LibraryFolder, LibrarySession, RecentLibrary,
+    RuntimeEvent, SectionSummary,
 };
 use gpui::{
-    AnyElement, Context, FontWeight, IntoElement, Keystroke, PathPromptOptions, Render,
+    AnyElement, Context, Entity, Focusable, FontWeight, IntoElement, PathPromptOptions,
     SharedString, Window, div, prelude::*, px, rgb,
 };
 
 use crate::{library_state::LibraryState, route::Route, theme::*};
+use actions::FocusSearch;
+use library::*;
+use text_input::{TextInput, TextInputKind};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ViewMode {
-    List,
-    Grid,
+pub(crate) fn bind_keys(cx: &mut gpui::App) {
+    actions::bind_keys(cx);
+    text_input::bind_keys(cx);
 }
 
 pub struct CastleApp {
     launcher: SessionLauncher,
     session: Option<LibrarySession>,
+    client: Option<LibraryClient>,
     library_state: LibraryState,
     recent_libraries: Vec<RecentLibrary>,
     library_notice: Option<String>,
@@ -33,8 +44,9 @@ pub struct CastleApp {
     route: Route,
     view_mode: ViewMode,
     sidebar_collapsed: bool,
-    search_active: bool,
-    query: String,
+    search_input: Entity<TextInput>,
+    editor: Option<editor::NoteEditor>,
+    allow_close: bool,
 }
 
 impl CastleApp {
@@ -56,10 +68,15 @@ impl CastleApp {
         if let Some(events) = events {
             Self::subscribe_to_runtime(events, cx);
         }
+        let client = session.as_ref().map(LibrarySession::client);
+        let search_input =
+            cx.new(|cx| TextInput::new(cx, TextInputKind::Search, "Filter collections"));
+        cx.observe(&search_input, |_, _, cx| cx.notify()).detach();
 
         Self {
             launcher,
             session,
+            client,
             library_state: LibraryState::new(active_epoch, library_error),
             recent_libraries,
             library_notice,
@@ -72,8 +89,9 @@ impl CastleApp {
             },
             view_mode: ViewMode::Grid,
             sidebar_collapsed: false,
-            search_active: false,
-            query: String::new(),
+            search_input,
+            editor: None,
+            allow_close: false,
         }
     }
 
@@ -194,6 +212,16 @@ impl CastleApp {
     }
 
     fn begin_library_switch(&mut self, path: PathBuf, cx: &mut Context<Self>) {
+        if self.has_dirty_editor(cx) {
+            if let Some(editor) = self.editor.as_mut() {
+                editor.confirm_discard = true;
+                editor.message =
+                    Some("Discard or save this draft before switching libraries.".into());
+            }
+            cx.notify();
+            return;
+        }
+        self.editor = None;
         self.switching_library = true;
         self.library_chooser_visible = false;
         self.library_notice = None;
@@ -202,10 +230,10 @@ impl CastleApp {
             section: None,
             directory: Vec::new(),
         };
-        self.search_active = false;
-        self.query.clear();
+        self.search_input.update(cx, |input, cx| input.clear(cx));
 
         let previous_session = self.session.take();
+        self.client = None;
         let launcher = self.launcher.clone();
         let background = cx.background_executor().clone();
         cx.spawn(async move |this, cx| {
@@ -234,6 +262,7 @@ impl CastleApp {
         match runtime {
             Ok((session, events)) => {
                 self.library_state.activate(session.epoch());
+                self.client = Some(session.client());
                 self.session = Some(session);
                 Self::subscribe_to_runtime(events, cx);
             }
@@ -242,30 +271,23 @@ impl CastleApp {
         cx.notify();
     }
 
-    pub fn handle_keystroke(&mut self, keystroke: &Keystroke, cx: &mut Context<Self>) {
-        if !self.search_active {
+    fn navigate(&mut self, route: Route, cx: &mut Context<Self>) {
+        if self.has_dirty_editor(cx) {
+            if let Some(editor) = self.editor.as_mut() {
+                editor.confirm_discard = true;
+                editor.message = Some("Save or discard this draft before leaving the note.".into());
+            }
+            cx.notify();
             return;
         }
-        match keystroke.key.as_str() {
-            "escape" | "enter" => self.search_active = false,
-            "backspace" => {
-                self.query.pop();
-            }
-            _ if !keystroke.modifiers.control && !keystroke.modifiers.platform => {
-                if let Some(character) = &keystroke.key_char {
-                    self.query.push_str(character);
-                }
-            }
-            _ => return,
-        }
+        self.editor = None;
+        self.route = route;
+        self.search_input.update(cx, |input, cx| input.clear(cx));
         cx.notify();
     }
 
-    fn navigate(&mut self, route: Route, cx: &mut Context<Self>) {
-        self.route = route;
-        self.search_active = false;
-        self.query.clear();
-        cx.notify();
+    fn focus_search(&mut self, _: &FocusSearch, window: &mut Window, cx: &mut Context<Self>) {
+        window.focus(&self.search_input.focus_handle(cx));
     }
 
     fn render_sidebar(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -746,34 +768,7 @@ impl CastleApp {
                     ),
             )
             .child(div().flex_1())
-            .child(
-                div()
-                    .id("library-search")
-                    .h(px(28.0))
-                    .w(px(190.0))
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .px_3()
-                    .border_1()
-                    .border_color(rgb(if self.search_active { ACCENT } else { LINE }))
-                    .bg(rgb(PANEL))
-                    .cursor_text()
-                    .text_xs()
-                    .text_color(rgb(if self.query.is_empty() { MUTED } else { TEXT }))
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        this.search_active = true;
-                        cx.notify();
-                    }))
-                    .child("⌕")
-                    .child(if !self.query.is_empty() {
-                        self.query.clone()
-                    } else if section.is_some() {
-                        "Filter this folder".to_owned()
-                    } else {
-                        "Filter collections".to_owned()
-                    }),
-            )
+            .child(self.search_input.clone())
             .child(
                 div()
                     .h(px(28.0))
@@ -812,6 +807,8 @@ impl CastleApp {
     }
 
     fn render_note_toolbar(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let editing = self.editor.is_some();
+        let dirty = self.has_dirty_editor(cx);
         div()
             .h(px(44.0))
             .w_full()
@@ -856,15 +853,58 @@ impl CastleApp {
                     }))
                     .child("←"),
             )
-            .child(self.toolbar_pill("READ", true))
-            .child(self.toolbar_pill("SOURCE", false))
+            .child(
+                self.toolbar_pill("READ", !editing)
+                    .id("note-read-mode")
+                    .cursor_pointer()
+                    .on_click(cx.listener(|this, _, _, cx| this.request_close_editor(cx))),
+            )
+            .child(
+                self.toolbar_pill("SOURCE", editing)
+                    .id("note-source-mode")
+                    .cursor_pointer()
+                    .on_click(cx.listener(|this, _, window, cx| this.start_editing(window, cx))),
+            )
             .child(div().flex_1())
+            .when(editing, |toolbar| {
+                toolbar.child(
+                    div()
+                        .id("save-note")
+                        .h(px(26.0))
+                        .flex()
+                        .items_center()
+                        .px_3()
+                        .border_1()
+                        .border_color(rgb(LINE))
+                        .cursor_pointer()
+                        .text_size(px(9.0))
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(rgb(if dirty { TEXT } else { MUTED }))
+                        .hover(|style| style.bg(rgb(HOVER)))
+                        .on_click(cx.listener(|this, _, _, cx| this.save_editor(cx)))
+                        .child(if dirty { "SAVE" } else { "SAVED" }),
+                )
+            })
             .child(self.chrome_button("☆", "Pin note"))
-            .child(self.chrome_button("✎", "Edit note"))
+            .child(
+                div()
+                    .id("edit-note")
+                    .size_7()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded_sm()
+                    .cursor_pointer()
+                    .text_xs()
+                    .text_color(rgb(MUTED))
+                    .hover(|style| style.bg(rgb(RAISED)).text_color(rgb(TEXT)))
+                    .on_click(cx.listener(|this, _, window, cx| this.start_editing(window, cx)))
+                    .child("✎"),
+            )
             .child(self.chrome_button("ⓘ", "Note details"))
     }
 
-    fn toolbar_pill(&self, label: &'static str, selected: bool) -> impl IntoElement {
+    fn toolbar_pill(&self, label: &'static str, selected: bool) -> gpui::Div {
         div()
             .h(px(26.0))
             .flex()
@@ -1069,7 +1109,7 @@ impl CastleApp {
             Route::Library { section, directory } => self
                 .render_library(library, section.as_deref(), directory, cx)
                 .into_any_element(),
-            Route::Note(note_id) => self.render_note(library, note_id),
+            Route::Note(note_id) => self.render_note(library, note_id, cx),
             Route::Placeholder(label) => self.render_placeholder(label).into_any_element(),
         }
     }
@@ -1089,7 +1129,7 @@ impl CastleApp {
             .bg(rgb(CANVAS))
             .p_8()
             .pb_16();
-        let query = self.query.trim().to_lowercase();
+        let query = self.search_input.read(cx).text().trim().to_lowercase();
 
         if let Some(section_id) = section_id {
             let section = library.section(section_id);
@@ -1461,79 +1501,6 @@ impl CastleApp {
             )
     }
 
-    fn render_note(&self, library: &AppSnapshot, note_id: &str) -> AnyElement {
-        let Some(note_index) = library.note_index_by_id(note_id) else {
-            return div().child("Note not found").into_any_element();
-        };
-        let note = &library.notes[note_index];
-        div()
-            .id("note-reader")
-            .min_h_0()
-            .flex_1()
-            .overflow_y_scroll()
-            .bg(rgb(CANVAS))
-            .child(
-                div()
-                    .max_w(px(820.0))
-                    .mx_auto()
-                    .px_12()
-                    .py_12()
-                    .child(
-                        div()
-                            .text_size(px(9.0))
-                            .font_weight(FontWeight::BOLD)
-                            .text_color(rgb(ACCENT_HOVER))
-                            .child(note.section_label.to_uppercase()),
-                    )
-                    .child(
-                        div()
-                            .mt_3()
-                            .text_size(px(48.0))
-                            .line_height(px(52.0))
-                            .font_weight(FontWeight::BOLD)
-                            .text_color(rgb(TEXT))
-                            .child(note.title.clone()),
-                    )
-                    .child(
-                        div()
-                            .mt_4()
-                            .pb_6()
-                            .border_b_1()
-                            .border_color(rgb(LINE))
-                            .text_xs()
-                            .text_color(rgb(MUTED))
-                            .child(format!(
-                                "{} words  ·  {} min read  ·  {}",
-                                note.word_count, note.reading_minutes, note.relative_path
-                            )),
-                    )
-                    .child(
-                        div()
-                            .mt_8()
-                            .text_base()
-                            .line_height(px(28.0))
-                            .text_color(rgb(TEXT_SECONDARY))
-                            .child(
-                                library
-                                    .note_markdown(note_index)
-                                    .unwrap_or_default()
-                                    .to_owned(),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .mt_10()
-                            .pt_5()
-                            .border_t_1()
-                            .border_color(rgb(LINE_SOFT))
-                            .text_size(px(9.0))
-                            .text_color(rgb(MUTED))
-                            .child("SOURCE MARKDOWN · RICH RENDERER IS THE NEXT LIBRARY MILESTONE"),
-                    ),
-            )
-            .into_any_element()
-    }
-
     fn render_placeholder(&self, label: &'static str) -> impl IntoElement {
         div()
             .min_h_0()
@@ -1574,79 +1541,4 @@ impl CastleApp {
                     ),
             )
     }
-}
-
-impl Render for CastleApp {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .size_full()
-            .flex()
-            .overflow_hidden()
-            .bg(rgb(CANVAS))
-            .font_family("-apple-system")
-            .text_color(rgb(TEXT))
-            .child(self.render_sidebar(cx))
-            .child(self.render_main(cx))
-    }
-}
-
-fn recent_note_indexes(library: &AppSnapshot) -> Vec<usize> {
-    let mut indexes = (0..library.notes.len()).collect::<Vec<_>>();
-    indexes.sort_by(|left, right| {
-        library.notes[*right]
-            .modified_at
-            .cmp(&library.notes[*left].modified_at)
-    });
-    indexes.truncate(5);
-    indexes
-}
-
-fn section_glyph(icon: &str) -> &'static str {
-    match icon {
-        "person" => "○",
-        "heart" => "♡",
-        "book" => "▤",
-        "calendar" => "□",
-        "document" => "▧",
-        "inbox" => "↓",
-        "video" => "▷",
-        "folder-open" => "◇",
-        "tick-circle" => "✓",
-        "link" => "↗",
-        _ => "◇",
-    }
-}
-
-fn title_case(value: &str) -> String {
-    let normalized = value.replace(['_', '-'], " ");
-    let mut characters = normalized.chars();
-    match characters.next() {
-        Some(first) => first.to_uppercase().collect::<String>() + characters.as_str(),
-        None => normalized,
-    }
-}
-
-fn note_directory(note: &CatalogNote) -> Vec<String> {
-    let mut parts = note
-        .relative_path
-        .split('/')
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
-    parts.pop();
-    parts
-}
-
-fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
-    if count == 1 { singular } else { plural }
-}
-
-fn note_search_text(note: &CatalogNote) -> String {
-    format!(
-        "{} {} {} {}",
-        note.title,
-        note.relative_path,
-        note.tags.join(" "),
-        note.excerpt
-    )
-    .to_lowercase()
 }

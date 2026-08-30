@@ -294,9 +294,12 @@ castle_desktop/src/
     settings/
 ```
 
-The prototype theme, route, and epoch-aware `LibraryState` have been separated
-from `ui.rs`; the remaining shell and Library view code should be split as the
-foundation work continues. Each feature owns:
+The first implementation pass now uses `ui/mod.rs` as the root app/lifecycle
+model and separates shell composition, Library selectors, note reading, source
+editing, Markdown projection, actions, and the reusable focused text input into
+their own modules. Library view composition remains colocated with the root
+model temporarily; it should move behind a dedicated feature model when folder
+selection and mutations land. Each feature owns:
 
 - its GPUI model and actions;
 - pure selectors and presentation structs;
@@ -316,10 +319,12 @@ Domain rules move to core/runtime rather than becoming reusable UI helpers.
 - `PreferencesModel`: durable per-library and application preferences.
 - Feature models: created per workspace and addressed by stable entity IDs.
 
-GPUI actions, rather than raw global keystroke inspection, should drive commands
-and navigation. Text entry must use focused input/editor entities so IME,
-selection, clipboard, and accessibility can be handled correctly. The
-prototype's lightweight `search_active` keystroke collector is temporary.
+GPUI actions now drive search focus, source-mode toggling, save, cancel, and
+text-editing commands. Search and source editing use focused
+`EntityInputHandler` entities, including IME handoff, Unicode grapheme movement,
+selection, and clipboard operations. Undo/redo, pointer-positioned selection,
+accessibility semantics, and large-document performance remain production
+editor gates.
 
 ### Typed routing
 
@@ -394,6 +399,13 @@ The production editor owns a text buffer and edit history separately from its
 view. Save always supplies the revision originally read and lets `castle_core`
 detect external changes. Read, Source, and split Edit/Preview modes consume the
 same `SourceDocument` session.
+
+The initial editor spike implements the safe data path: asynchronous source
+load, local validation, expected-revision save, preserved drafts on errors or
+conflicts, dirty navigation/library guards, and a dirty window-close prompt.
+Its lightweight text buffer is deliberately not yet the production editor:
+undo/redo, accurate pointer hit-testing, visible range selection, and large-file
+measurement still need the release-gate work above.
 
 ### Canvas, maps, sheets, and media
 
@@ -584,16 +596,19 @@ more screens:
 - [x] Move the GPUI crate to `native/castle_desktop/`, add explicit desktop
   commands, and keep it out of default non-desktop workspace builds.
 - [x] Replace `DemoLibrary` with the runtime snapshot and lookup indexes.
-- [ ] Finish splitting the prototype's shell and Library code. Theme and typed
-  routing are already separate from `ui.rs`.
-- [ ] Replace global keystroke capture with focused GPUI actions and input state.
+- [x] Split root lifecycle, shell, Library selectors, notes, Markdown, editor,
+  actions, and reusable focused input into bounded modules. Library rendering
+  moves fully behind a feature model when its mutation commands land.
+- [x] Replace global keystroke capture with focused GPUI actions and input state.
 - [x] Add the native directory chooser, serialized library session replacement,
   debounced filesystem watching, and stale-epoch rejection tests.
 - [x] Add the canonical recent-library registry and launch-time recovery chooser
   for installations without a valid configured library.
-- [ ] Build the Markdown reader spike, followed by the editor/IME spike; record
-  the results and dependencies as architecture decisions before committing to
-  the remaining feature schedule.
+- [x] Build the Markdown reader spike with headings, lists, links, code, tables,
+  assets, outline, and backlinks.
+- [x] Build the safe editor/IME spike with revision-checked saving, conflict
+  preservation, and dirty-state protection. Complete the production editor
+  release gates before enabling source editing by default.
 
 This ordering turns the current visual prototype into a durable application
 base while keeping every subsequent feature migration isolated, testable, and
