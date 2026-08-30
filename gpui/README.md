@@ -1,5 +1,9 @@
 # Castle GPUI experiment
 
+The proposed production structure, runtime boundaries, phased feature plan, and
+Electron cutover gates are documented in
+[`docs/gpui-desktop-architecture.md`](../docs/gpui-desktop-architecture.md).
+
 This standalone crate is a native Rust proof of concept for replacing Castle's
 Electron shell and React renderer with [GPUI](https://gpui.rs/). It deliberately
 does not participate in `native/Cargo.toml`, so Castle's existing production
