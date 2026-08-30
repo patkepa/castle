@@ -1,6 +1,40 @@
-use std::path::PathBuf;
+use std::{
+    path::{Path, PathBuf},
+    sync::mpsc::Receiver,
+};
 
 use anyhow::{Context, Result, bail};
+use castle_runtime::{LibrarySession, RuntimeEvent, configured_session_options};
+
+#[derive(Debug, Clone)]
+pub struct SessionLauncher {
+    application_repository_root: PathBuf,
+    cache_root: PathBuf,
+}
+
+impl SessionLauncher {
+    pub fn new(
+        application_repository_root: impl Into<PathBuf>,
+        cache_root: impl Into<PathBuf>,
+    ) -> Self {
+        Self {
+            application_repository_root: application_repository_root.into(),
+            cache_root: cache_root.into(),
+        }
+    }
+
+    pub fn launch(
+        &self,
+        library: Option<&Path>,
+    ) -> Result<(LibrarySession, Receiver<RuntimeEvent>)> {
+        configured_session_options(
+            &self.application_repository_root,
+            library,
+            self.cache_root.clone(),
+        )
+        .map(LibrarySession::spawn)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct StartupOptions {

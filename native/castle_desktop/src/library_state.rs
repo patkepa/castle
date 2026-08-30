@@ -41,6 +41,33 @@ impl LibraryState {
         true
     }
 
+    pub(crate) fn begin_switch(&mut self, library: &str) {
+        self.active_epoch = None;
+        self.snapshot = None;
+        self.error = None;
+        self.status = format!("Opening {library}…");
+    }
+
+    pub(crate) fn activate(&mut self, epoch: SessionEpoch) {
+        self.active_epoch = Some(epoch);
+        self.snapshot = None;
+        self.error = None;
+    }
+
+    pub(crate) fn fail_switch(&mut self, reason: String) {
+        self.active_epoch = None;
+        self.snapshot = None;
+        self.status = reason.clone();
+        self.error = Some(reason);
+    }
+
+    pub(crate) fn report_error(&mut self, reason: String) {
+        self.status = reason.clone();
+        if self.snapshot.is_none() {
+            self.error = Some(reason);
+        }
+    }
+
     pub(crate) fn snapshot(&self) -> Option<&Arc<AppSnapshot>> {
         self.snapshot.as_ref()
     }
@@ -74,21 +101,37 @@ mod tests {
     #[test]
     fn ignores_events_from_a_retired_session_epoch() {
         let retired = SessionEpoch::next();
-        let active = SessionEpoch::next();
-        let mut state = LibraryState::new(Some(active), None);
+        let mut state = LibraryState::new(Some(retired), None);
+        state.begin_switch("another library");
 
         assert!(!state.apply(status_event(retired, "retired")));
-        assert_eq!(state.status(), "Opening the Castle…");
+        assert_eq!(state.status(), "Opening another library…");
         assert!(state.snapshot().is_none());
     }
 
     #[test]
     fn accepts_events_from_the_active_session_epoch() {
+        let retired = SessionEpoch::next();
         let active = SessionEpoch::next();
-        let mut state = LibraryState::new(Some(active), Some("startup failure".into()));
+        let mut state = LibraryState::new(Some(retired), Some("startup failure".into()));
+        state.begin_switch("another library");
+        state.activate(active);
 
+        assert!(!state.apply(status_event(retired, "retired")));
         assert!(state.apply(status_event(active, "ready")));
         assert_eq!(state.status(), "ready");
+        assert!(state.error().is_none());
+    }
+
+    #[test]
+    fn picker_errors_do_not_retire_the_active_epoch() {
+        let active = SessionEpoch::next();
+        let mut state = LibraryState::new(Some(active), None);
+
+        state.report_error("picker failed".into());
+
+        assert!(state.apply(status_event(active, "still active")));
+        assert_eq!(state.status(), "still active");
         assert!(state.error().is_none());
     }
 }

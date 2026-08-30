@@ -5,8 +5,7 @@ mod ui;
 
 use std::{env, path::PathBuf};
 
-use castle_desktop::parse_startup_options;
-use castle_runtime::{LibrarySession, configured_session_options};
+use castle_desktop::{SessionLauncher, parse_startup_options};
 use gpui::{
     App, AppContext, Application, Bounds, SharedString, TitlebarOptions, WindowBounds,
     WindowOptions, px, size,
@@ -15,14 +14,15 @@ use ui::CastleApp;
 
 fn main() {
     let repository_root = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let runtime = parse_startup_options(env::args().skip(1))
-        .and_then(|startup| {
-            let cache_root = startup
-                .cache
-                .unwrap_or_else(|| repository_root.join("native/target/castle-desktop-cache"));
-            configured_session_options(&repository_root, startup.library.as_deref(), cache_root)
-        })
-        .map(LibrarySession::spawn)
+    let startup = parse_startup_options(env::args().skip(1));
+    let cache_root = startup
+        .as_ref()
+        .ok()
+        .and_then(|startup| startup.cache.clone())
+        .unwrap_or_else(|| repository_root.join("native/target/castle-desktop-cache"));
+    let launcher = SessionLauncher::new(&repository_root, cache_root);
+    let runtime = startup
+        .and_then(|startup| launcher.launch(startup.library.as_deref()))
         .map_err(|error| SharedString::from(format!("{error:#}")));
 
     Application::new().run(move |cx: &mut App| {
@@ -37,7 +37,7 @@ fn main() {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     ..Default::default()
                 },
-                |_, cx| cx.new(|cx| CastleApp::new(runtime, cx)),
+                |_, cx| cx.new(|cx| CastleApp::new(launcher, runtime, cx)),
             )
             .expect("failed to open Castle's GPUI window");
         let view = window

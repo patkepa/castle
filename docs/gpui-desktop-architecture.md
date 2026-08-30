@@ -244,6 +244,13 @@ Failures are explicit app states (`choosing`, `opening`, `ready`, `stale`, and
 `unavailable`), not panics. The user must be able to choose another library or
 retry without restarting the app.
 
+The foundation now implements runtime switching through GPUI's native directory
+picker. Selection retires the active epoch before the previous actor shuts down;
+the replacement actor starts off the UI thread, and only its epoch is activated
+before its event receiver is attached. Overlapping chooser and switch requests
+are suppressed. Persisted recent libraries and the launch-time chooser remain
+future work.
+
 ## GPUI application architecture
 
 ### Suggested source layout
@@ -528,6 +535,12 @@ all release artifacts pass platform security and packaging checks.
 - **Packaging:** launch, library-open, edit/save, relaunch, and asset loading from
   the signed packaged artifact—not only `cargo run`.
 
+The current unbundled debug binary has no registered macOS application identity,
+so accessibility-driven UI automation cannot address it by bundle ID. Packaging
+must establish that identity before the native picker and other system surfaces
+can join the scripted UI suite; process and runtime integration smoke tests cover
+the development binary in the interim.
+
 ### Performance rules
 
 Milestone 0 records reference-library and large-library baselines. CI should
@@ -572,9 +585,10 @@ more screens:
 - [ ] Finish splitting the prototype's shell and Library code. Theme and typed
   routing are already separate from `ui.rs`.
 - [ ] Replace global keystroke capture with focused GPUI actions and input state.
-- [ ] Add library switching before exposing writes in the UI. Debounced
-  filesystem watching and stale-epoch rejection tests are implemented; the
-  native chooser and session replacement flow remain.
+- [x] Add the native directory chooser, serialized library session replacement,
+  debounced filesystem watching, and stale-epoch rejection tests.
+- [ ] Add the canonical recent-library registry and launch-time chooser for
+  installations without a valid configured library.
 - [ ] Build the Markdown reader spike, followed by the editor/IME spike; record
   the results and dependencies as architecture decisions before committing to
   the remaining feature schedule.

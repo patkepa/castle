@@ -23,7 +23,8 @@ The current implementation proves that a GPUI window can:
   modes, with lightweight keyboard filtering after clicking the filter field;
 - open notes in a Castle-styled reading surface without a browser, Vite, React,
   Electron, or IPC;
-- accept a different library with `--library /absolute/path/to/library`.
+- accept a different library with `--library /absolute/path/to/library` or
+  switch at runtime through the native directory chooser in the sidebar.
 
 Run it from the repository root:
 
@@ -46,15 +47,20 @@ The current component download is roughly 688 MB. GPUI's first clean build also
 compiles a substantially larger dependency graph than Castle's existing core
 crates; incremental builds are much faster.
 
+The `cargo run` binary is intentionally still unbundled. Automated macOS UI
+control that targets applications by bundle identity will become available with
+the packaging milestone; runtime tests and a process-launch smoke cover this
+development phase.
+
 ## Current boundary
 
 This is an architecture foundation, not a replacement desktop release. Note
 bodies are shown as source Markdown. Editing, rich Markdown, full search and
 command palette behavior, canvases, sheets, calendar/tasks/projects, AI chat,
 persistence, menus, shortcuts, accessibility QA, packaging, and parity tests
-remain unported. Filesystem watching is live for the active library; native
-library switching and its chooser UI remain unported. Non-Library sidebar
-destinations are intentional roadmap placeholders.
+remain unported. Filesystem watching and native library switching are live;
+the recent-library registry and launch-time chooser state remain unported.
+Non-Library sidebar destinations are intentional roadmap placeholders.
 
 ## Early assessment
 

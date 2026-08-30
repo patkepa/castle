@@ -1,11 +1,15 @@
-use std::sync::{Arc, Mutex, mpsc::Receiver};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex, mpsc::Receiver},
+};
 
+use castle_desktop::SessionLauncher;
 use castle_runtime::{
     AppSnapshot, CatalogNote, LibraryFolder, LibrarySession, RuntimeEvent, SectionSummary,
 };
 use gpui::{
-    AnyElement, Context, FontWeight, IntoElement, Keystroke, Render, SharedString, Window, div,
-    prelude::*, px, rgb,
+    AnyElement, Context, FontWeight, IntoElement, Keystroke, PathPromptOptions, Render,
+    SharedString, Window, div, prelude::*, px, rgb,
 };
 
 use crate::{library_state::LibraryState, route::Route, theme::*};
@@ -17,8 +21,11 @@ enum ViewMode {
 }
 
 pub struct CastleApp {
-    _session: Option<LibrarySession>,
+    launcher: SessionLauncher,
+    session: Option<LibrarySession>,
     library_state: LibraryState,
+    chooser_open: bool,
+    switching_library: bool,
     route: Route,
     view_mode: ViewMode,
     sidebar_collapsed: bool,
@@ -28,6 +35,7 @@ pub struct CastleApp {
 
 impl CastleApp {
     pub fn new(
+        launcher: SessionLauncher,
         runtime: Result<(LibrarySession, Receiver<RuntimeEvent>), SharedString>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -37,36 +45,15 @@ impl CastleApp {
         };
         let active_epoch = session.as_ref().map(LibrarySession::epoch);
         if let Some(events) = events {
-            let events = Arc::new(Mutex::new(events));
-            let background = cx.background_executor().clone();
-            cx.spawn(async move |this, cx| {
-                loop {
-                    let events = Arc::clone(&events);
-                    let received = background
-                        .spawn(async move {
-                            events
-                                .lock()
-                                .expect("Castle runtime event receiver lock was poisoned")
-                                .recv()
-                        })
-                        .await;
-                    let Ok(event) = received else {
-                        break;
-                    };
-                    if this
-                        .update(&mut *cx, |this, cx| this.apply_runtime_event(event, cx))
-                        .is_err()
-                    {
-                        break;
-                    }
-                }
-            })
-            .detach();
+            Self::subscribe_to_runtime(events, cx);
         }
 
         Self {
-            _session: session,
+            launcher,
+            session,
             library_state: LibraryState::new(active_epoch, library_error),
+            chooser_open: false,
+            switching_library: false,
             route: Route::Library {
                 section: None,
                 directory: Vec::new(),
@@ -82,6 +69,122 @@ impl CastleApp {
         if self.library_state.apply(event) {
             cx.notify();
         }
+    }
+
+    fn subscribe_to_runtime(events: Receiver<RuntimeEvent>, cx: &mut Context<Self>) {
+        let events = Arc::new(Mutex::new(events));
+        let background = cx.background_executor().clone();
+        cx.spawn(async move |this, cx| {
+            loop {
+                let events = Arc::clone(&events);
+                let received = background
+                    .spawn(async move {
+                        events
+                            .lock()
+                            .expect("Castle runtime event receiver lock was poisoned")
+                            .recv()
+                    })
+                    .await;
+                let Ok(event) = received else {
+                    break;
+                };
+                if this
+                    .update(&mut *cx, |this, cx| this.apply_runtime_event(event, cx))
+                    .is_err()
+                {
+                    break;
+                }
+            }
+        })
+        .detach();
+    }
+
+    fn choose_library(&mut self, cx: &mut Context<Self>) {
+        if self.chooser_open || self.switching_library {
+            return;
+        }
+        self.chooser_open = true;
+        let selection = cx.prompt_for_paths(PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: Some("Open Library".into()),
+        });
+        cx.spawn(async move |this, cx| {
+            let selected = selection.await;
+            let _ = this.update(&mut *cx, |this, cx| {
+                this.chooser_open = false;
+                match selected {
+                    Ok(Ok(Some(paths))) => {
+                        if let Some(path) = paths.into_iter().next() {
+                            this.begin_library_switch(path, cx);
+                        }
+                    }
+                    Ok(Ok(None)) => cx.notify(),
+                    Ok(Err(reason)) => {
+                        this.library_state.report_error(format!(
+                            "Castle could not open the library picker: {reason:#}"
+                        ));
+                        cx.notify();
+                    }
+                    Err(reason) => {
+                        this.library_state.report_error(format!(
+                            "Castle's library picker closed before replying: {reason}"
+                        ));
+                        cx.notify();
+                    }
+                }
+            });
+        })
+        .detach();
+        cx.notify();
+    }
+
+    fn begin_library_switch(&mut self, path: PathBuf, cx: &mut Context<Self>) {
+        self.switching_library = true;
+        self.library_state.begin_switch(&path.to_string_lossy());
+        self.route = Route::Library {
+            section: None,
+            directory: Vec::new(),
+        };
+        self.search_active = false;
+        self.query.clear();
+
+        let previous_session = self.session.take();
+        let launcher = self.launcher.clone();
+        let background = cx.background_executor().clone();
+        cx.spawn(async move |this, cx| {
+            let runtime = background
+                .spawn(async move {
+                    if let Some(session) = previous_session {
+                        session.shutdown();
+                    }
+                    launcher.launch(Some(&path))
+                })
+                .await;
+            let _ = this.update(&mut *cx, |this, cx| {
+                this.finish_library_switch(runtime, cx);
+            });
+        })
+        .detach();
+        cx.notify();
+    }
+
+    fn finish_library_switch(
+        &mut self,
+        runtime: anyhow::Result<(LibrarySession, Receiver<RuntimeEvent>)>,
+        cx: &mut Context<Self>,
+    ) {
+        self.switching_library = false;
+        match runtime {
+            Ok((session, events)) => {
+                self.library_state.activate(session.epoch());
+                self.session = Some(session);
+                Self::subscribe_to_runtime(events, cx);
+            }
+            Err(reason) => self.library_state.fail_switch(format!("{reason:#}")),
+        }
+        cx.notify();
     }
 
     pub fn handle_keystroke(&mut self, keystroke: &Keystroke, cx: &mut Context<Self>) {
@@ -239,6 +342,7 @@ impl CastleApp {
 
         sidebar.child(navigation).child(
             div()
+                .id("switch-library")
                 .h(px(42.0))
                 .flex_none()
                 .flex()
@@ -248,10 +352,17 @@ impl CastleApp {
                 .border_color(rgb(LINE_SOFT))
                 .text_xs()
                 .text_color(rgb(MUTED))
+                .cursor_pointer()
+                .hover(|style| style.bg(rgb(HOVER)).text_color(rgb(TEXT)))
+                .on_click(cx.listener(|this, _, _, cx| this.choose_library(cx)))
                 .child(if self.sidebar_collapsed {
-                    "α".to_owned()
+                    "⇄".to_owned()
+                } else if self.switching_library {
+                    "OPENING LIBRARY…".to_owned()
+                } else if self.chooser_open {
+                    "CHOOSING LIBRARY…".to_owned()
                 } else {
-                    "GPUI PREVIEW  ·  NATIVE".to_owned()
+                    "⇄  SWITCH LIBRARY".to_owned()
                 }),
         )
     }
