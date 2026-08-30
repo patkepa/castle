@@ -6,7 +6,8 @@ This workspace is the content backend for Castle.
   Castle Records, resolves Obsidian links, writes content-addressed snapshots,
   and implements transactional source mutations.
 - `castle_runtime` owns the in-process desktop library session, serializes
-  commands, and publishes epoch-scoped snapshots and content events.
+  commands, watches external filesystem changes, and publishes epoch-scoped
+  snapshots and content events.
 - `castle_desktop` is the native GPUI application. It is an explicit workspace
   target rather than a default member because GPUI has a platform build stack.
 - `castle_cli` exposes `build`, `validate`, and the persistent Electron

@@ -15,6 +15,8 @@ The current implementation proves that a GPUI window can:
   `castle-runtime` session actor;
 - consume an immutable, indexed `AppSnapshot` without cloning a second UI
   domain model;
+- refresh that snapshot after debounced external filesystem changes while
+  rejecting events from retired session epochs;
 - reproduce Castle's dark Kantzen workspace shell, collapsible navigation,
   breadcrumb chrome, recent notes, and Library toolbar;
 - browse the collection index, nested folders, and notes in native list or grid
@@ -49,9 +51,10 @@ crates; incremental builds are much faster.
 This is an architecture foundation, not a replacement desktop release. Note
 bodies are shown as source Markdown. Editing, rich Markdown, full search and
 command palette behavior, canvases, sheets, calendar/tasks/projects, AI chat,
-filesystem watching, persistence, menus, shortcuts, accessibility QA,
-packaging, and parity tests remain unported. Non-Library sidebar destinations
-are intentional roadmap placeholders.
+persistence, menus, shortcuts, accessibility QA, packaging, and parity tests
+remain unported. Filesystem watching is live for the active library; native
+library switching and its chooser UI remain unported. Non-Library sidebar
+destinations are intentional roadmap placeholders.
 
 ## Early assessment
 

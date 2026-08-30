@@ -1105,6 +1105,7 @@ dependencies = [
  "anyhow",
  "castle-contracts",
  "castle-core",
+ "notify",
  "tempfile",
 ]
 

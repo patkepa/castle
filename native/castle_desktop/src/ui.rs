@@ -2,14 +2,13 @@ use std::sync::{Arc, Mutex, mpsc::Receiver};
 
 use castle_runtime::{
     AppSnapshot, CatalogNote, LibraryFolder, LibrarySession, RuntimeEvent, SectionSummary,
-    ServiceStatusKind,
 };
 use gpui::{
     AnyElement, Context, FontWeight, IntoElement, Keystroke, Render, SharedString, Window, div,
     prelude::*, px, rgb,
 };
 
-use crate::{route::Route, theme::*};
+use crate::{library_state::LibraryState, route::Route, theme::*};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ViewMode {
@@ -18,10 +17,8 @@ enum ViewMode {
 }
 
 pub struct CastleApp {
-    session: Option<LibrarySession>,
-    library: Option<Arc<AppSnapshot>>,
-    library_error: Option<SharedString>,
-    library_status: SharedString,
+    _session: Option<LibrarySession>,
+    library_state: LibraryState,
     route: Route,
     view_mode: ViewMode,
     sidebar_collapsed: bool,
@@ -36,8 +33,9 @@ impl CastleApp {
     ) -> Self {
         let (session, events, library_error) = match runtime {
             Ok((session, events)) => (Some(session), Some(events), None),
-            Err(reason) => (None, None, Some(reason)),
+            Err(reason) => (None, None, Some(reason.to_string())),
         };
+        let active_epoch = session.as_ref().map(LibrarySession::epoch);
         if let Some(events) = events {
             let events = Arc::new(Mutex::new(events));
             let background = cx.background_executor().clone();
@@ -67,10 +65,8 @@ impl CastleApp {
         }
 
         Self {
-            session,
-            library: None,
-            library_error,
-            library_status: "Opening the Castle…".into(),
+            _session: session,
+            library_state: LibraryState::new(active_epoch, library_error),
             route: Route::Library {
                 section: None,
                 directory: Vec::new(),
@@ -83,32 +79,9 @@ impl CastleApp {
     }
 
     fn apply_runtime_event(&mut self, event: RuntimeEvent, cx: &mut Context<Self>) {
-        let Some(session) = &self.session else {
-            return;
-        };
-        if event.epoch() != session.epoch() {
-            return;
+        if self.library_state.apply(event) {
+            cx.notify();
         }
-        match event {
-            RuntimeEvent::LibraryReady { snapshot, .. }
-            | RuntimeEvent::ContentChanged { snapshot, .. } => {
-                self.library = Some(snapshot);
-                self.library_error = None;
-            }
-            RuntimeEvent::ServiceStatus { status, .. } => {
-                self.library_status = status.message.clone().into();
-                match status.kind {
-                    ServiceStatusKind::Unavailable => {
-                        self.library_error = Some(status.message.into());
-                    }
-                    ServiceStatusKind::Ready | ServiceStatusKind::Opening => {
-                        self.library_error = None;
-                    }
-                    ServiceStatusKind::Stale | ServiceStatusKind::Stopped => {}
-                }
-            }
-        }
-        cx.notify();
     }
 
     pub fn handle_keystroke(&mut self, keystroke: &Keystroke, cx: &mut Context<Self>) {
@@ -230,11 +203,12 @@ impl CastleApp {
         }
 
         if !self.sidebar_collapsed
-            && let Some(library) = &self.library
+            && let Some(library) = self.library_state.snapshot()
         {
             navigation = navigation.child(self.sidebar_group_label("Recent"));
             for note_index in recent_note_indexes(library) {
                 let note = &library.notes[note_index];
+                let note_id = note.id.clone();
                 navigation = navigation.child(
                     div()
                         .id(SharedString::from(format!("recent-{}", note.id)))
@@ -245,7 +219,7 @@ impl CastleApp {
                         .gap_2()
                         .px_3()
                         .border_l_2()
-                        .border_color(rgb(if self.route == Route::Note(note_index) {
+                        .border_color(rgb(if self.route == Route::Note(note.id.clone()) {
                             ACCENT
                         } else {
                             NAV
@@ -255,7 +229,7 @@ impl CastleApp {
                         .text_color(rgb(TEXT_SECONDARY))
                         .hover(|style| style.bg(rgb(HOVER)).text_color(rgb(TEXT)))
                         .on_click(cx.listener(move |this, _, _, cx| {
-                            this.navigate(Route::Note(note_index), cx);
+                            this.navigate(Route::Note(note_id.clone()), cx);
                         }))
                         .child(div().text_color(rgb(MUTED)).child("·"))
                         .child(div().truncate().child(note.title.clone())),
@@ -438,8 +412,8 @@ impl CastleApp {
                 }
                 if let Some(section_id) = section {
                     let section_label = self
-                        .library
-                        .as_deref()
+                        .library_state
+                        .snapshot()
                         .and_then(|library| library.section(section_id))
                         .map(|section| section.label.clone())
                         .unwrap_or_else(|| title_case(section_id));
@@ -473,9 +447,9 @@ impl CastleApp {
                     }
                 }
             }
-            Route::Note(note_index) => {
-                if let Some(library) = &self.library
-                    && let Some(note) = library.notes.get(*note_index)
+            Route::Note(note_id) => {
+                if let Some(library) = self.library_state.snapshot()
+                    && let Some(note) = library.note_by_id(note_id)
                 {
                     breadcrumb = breadcrumb
                         .child(self.breadcrumb_link(
@@ -533,7 +507,7 @@ impl CastleApp {
             _ => (None, &[] as &[String]),
         };
         let title = section
-            .and_then(|id| self.library.as_deref()?.section(id))
+            .and_then(|id| self.library_state.snapshot()?.section(id))
             .map(|section| section.label.clone())
             .unwrap_or_else(|| "All collections".into());
         let eyebrow = if directory.is_empty() {
@@ -693,10 +667,10 @@ impl CastleApp {
                     .hover(|style| style.bg(rgb(RAISED)).text_color(rgb(TEXT)))
                     .on_click(cx.listener(|this, _, _, cx| {
                         let destination = match &this.route {
-                            Route::Note(index) => this
-                                .library
-                                .as_deref()
-                                .and_then(|library| library.notes.get(*index))
+                            Route::Note(note_id) => this
+                                .library_state
+                                .snapshot()
+                                .and_then(|library| library.note_by_id(note_id))
                                 .map(|note| Route::Library {
                                     section: Some(note.section.clone()),
                                     directory: note_directory(note),
@@ -737,7 +711,7 @@ impl CastleApp {
     }
 
     fn render_content(&self, cx: &mut Context<Self>) -> AnyElement {
-        if let Some(message) = &self.library_error {
+        if let Some(message) = self.library_state.error() {
             return div()
                 .h_full()
                 .flex_1()
@@ -753,11 +727,11 @@ impl CastleApp {
                     div()
                         .text_sm()
                         .text_color(rgb(MUTED))
-                        .child(message.clone()),
+                        .child(message.to_owned()),
                 )
                 .into_any_element();
         }
-        let Some(library) = &self.library else {
+        let Some(library) = self.library_state.snapshot() else {
             return div()
                 .h_full()
                 .flex_1()
@@ -773,7 +747,7 @@ impl CastleApp {
                     div()
                         .text_sm()
                         .text_color(rgb(MUTED))
-                        .child(self.library_status.clone()),
+                        .child(self.library_state.status().to_owned()),
                 )
                 .into_any_element();
         };
@@ -781,7 +755,7 @@ impl CastleApp {
             Route::Library { section, directory } => self
                 .render_library(library, section.as_deref(), directory, cx)
                 .into_any_element(),
-            Route::Note(note_index) => self.render_note(library, *note_index),
+            Route::Note(note_id) => self.render_note(library, note_id),
             Route::Placeholder(label) => self.render_placeholder(label).into_any_element(),
         }
     }
@@ -987,8 +961,7 @@ impl CastleApp {
                 container.child(self.folder_tile(section_id, &library.folders[*folder_index], cx));
         }
         for note_index in notes {
-            container =
-                container.child(self.note_tile(&library.notes[*note_index], *note_index, cx));
+            container = container.child(self.note_tile(&library.notes[*note_index], cx));
         }
         container
     }
@@ -1033,12 +1006,8 @@ impl CastleApp {
         )
     }
 
-    fn note_tile(
-        &self,
-        note: &CatalogNote,
-        note_index: usize,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
+    fn note_tile(&self, note: &CatalogNote, cx: &mut Context<Self>) -> impl IntoElement {
+        let note_id = note.id.clone();
         self.entry_tile(
             SharedString::from(format!("note-tile-{}", note.id)),
             "▧",
@@ -1049,7 +1018,7 @@ impl CastleApp {
                 note.tags.join(" · ")
             },
             true,
-            move |this, cx| this.navigate(Route::Note(note_index), cx),
+            move |this, cx| this.navigate(Route::Note(note_id.clone()), cx),
             cx,
         )
     }
@@ -1178,10 +1147,11 @@ impl CastleApp {
             )
     }
 
-    fn render_note(&self, library: &AppSnapshot, note_index: usize) -> AnyElement {
-        let Some(note) = library.notes.get(note_index) else {
+    fn render_note(&self, library: &AppSnapshot, note_id: &str) -> AnyElement {
+        let Some(note_index) = library.note_index_by_id(note_id) else {
             return div().child("Note not found").into_any_element();
         };
+        let note = &library.notes[note_index];
         div()
             .id("note-reader")
             .min_h_0()

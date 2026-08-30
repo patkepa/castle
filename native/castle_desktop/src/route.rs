@@ -4,7 +4,7 @@ pub(crate) enum Route {
         section: Option<String>,
         directory: Vec<String>,
     },
-    Note(usize),
+    Note(String),
     Placeholder(&'static str),
 }
 

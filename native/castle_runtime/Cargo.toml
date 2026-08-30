@@ -11,6 +11,7 @@ publish.workspace = true
 anyhow.workspace = true
 castle-contracts = { path = "../castle_contracts" }
 castle-core = { path = "../castle_core" }
+notify.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

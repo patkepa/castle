@@ -5,9 +5,10 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
-        mpsc::{self, Receiver, SyncSender},
+        mpsc::{self, Receiver, RecvTimeoutError, Sender, SyncSender},
     },
     thread,
+    time::{Duration, Instant},
 };
 
 use anyhow::{Context, Result, anyhow};
@@ -20,9 +21,16 @@ use castle_contracts::{
     SourceDocument, TaskMutationResult, UpdatePersonInput,
 };
 use castle_core::{CastleCompilation, CastleService, ServiceOptions};
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 
 const COMMAND_CAPACITY: usize = 64;
 const EVENT_CAPACITY: usize = 64;
+const WATCH_DEBOUNCE: Duration = Duration::from_millis(100);
+const WATCH_IDLE_TICK: Duration = Duration::from_millis(500);
+#[cfg(not(test))]
+const WATCH_FALLBACK_SCAN: Duration = Duration::from_secs(30);
+#[cfg(test)]
+const WATCH_FALLBACK_SCAN: Duration = Duration::from_secs(1);
 static NEXT_SESSION_EPOCH: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -153,6 +161,10 @@ impl AppSnapshot {
         self.note_indexes_by_id
             .get(note_id)
             .and_then(|index| self.notes.get(*index))
+    }
+
+    pub fn note_index_by_id(&self, note_id: &str) -> Option<usize> {
+        self.note_indexes_by_id.get(note_id).copied()
     }
 
     pub fn note_by_route(&self, route: &str) -> Option<&CatalogNote> {
@@ -366,7 +378,7 @@ enum LibraryCommand {
         reply: Reply<PersonMutationResult>,
     },
     RefreshExternalChanges {
-        reply: Reply<bool>,
+        reply: Option<Reply<bool>>,
     },
     Shutdown,
 }
@@ -375,6 +387,8 @@ pub struct LibrarySession {
     epoch: SessionEpoch,
     commands: SyncSender<LibraryCommand>,
     worker: Option<thread::JoinHandle<()>>,
+    watcher_stop: Sender<()>,
+    watcher: Option<thread::JoinHandle<()>>,
 }
 
 impl LibrarySession {
@@ -382,6 +396,28 @@ impl LibrarySession {
         let epoch = SessionEpoch::next();
         let (command_sender, command_receiver) = mpsc::sync_channel(COMMAND_CAPACITY);
         let (event_sender, event_receiver) = mpsc::sync_channel(EVENT_CAPACITY);
+        let (watcher_stop, watcher_stop_receiver) = mpsc::channel();
+        let (watcher_ready, watcher_ready_receiver) = mpsc::channel();
+        let library_root = options
+            .library_root
+            .canonicalize()
+            .unwrap_or_else(|_| options.library_root.clone());
+        let watcher_commands = command_sender.clone();
+        let watcher_events = event_sender.clone();
+        let watcher = thread::Builder::new()
+            .name(format!("castle-library-watcher-{}", epoch.get()))
+            .spawn(move || {
+                run_library_watcher(
+                    epoch,
+                    library_root,
+                    watcher_commands,
+                    watcher_events,
+                    watcher_stop_receiver,
+                    watcher_ready,
+                );
+            })
+            .expect("Castle could not start its filesystem watcher thread");
+        let _ = watcher_ready_receiver.recv();
         let worker = thread::Builder::new()
             .name(format!("castle-library-{}", epoch.get()))
             .spawn(move || run_library_session(epoch, options, command_receiver, event_sender))
@@ -391,6 +427,8 @@ impl LibrarySession {
                 epoch,
                 commands: command_sender,
                 worker: Some(worker),
+                watcher_stop,
+                watcher: Some(watcher),
             },
             event_receiver,
         )
@@ -456,11 +494,15 @@ impl LibrarySession {
     }
 
     pub fn refresh_external_changes(&self) -> Result<bool> {
-        self.request(|reply| LibraryCommand::RefreshExternalChanges { reply })
+        self.request(|reply| LibraryCommand::RefreshExternalChanges { reply: Some(reply) })
     }
 
     pub fn shutdown(mut self) {
+        let _ = self.watcher_stop.send(());
         let _ = self.commands.send(LibraryCommand::Shutdown);
+        if let Some(watcher) = self.watcher.take() {
+            let _ = watcher.join();
+        }
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();
         }
@@ -480,10 +522,107 @@ impl LibrarySession {
 
 impl Drop for LibrarySession {
     fn drop(&mut self) {
+        let _ = self.watcher_stop.send(());
         if self.worker.is_some() {
             let _ = self.commands.try_send(LibraryCommand::Shutdown);
         }
     }
+}
+
+fn run_library_watcher(
+    epoch: SessionEpoch,
+    library_root: PathBuf,
+    commands: SyncSender<LibraryCommand>,
+    events: SyncSender<RuntimeEvent>,
+    stop: Receiver<()>,
+    ready: Sender<()>,
+) {
+    let (watch_event_sender, watch_events) = mpsc::channel();
+    let mut watcher = match notify::recommended_watcher(move |result| {
+        let _ = watch_event_sender.send(result);
+    }) {
+        Ok(watcher) => watcher,
+        Err(reason) => {
+            send_watcher_error(&events, epoch, anyhow!(reason));
+            let _ = ready.send(());
+            return;
+        }
+    };
+    if let Err(reason) = watcher.watch(&library_root, RecursiveMode::Recursive) {
+        send_watcher_error(&events, epoch, anyhow!(reason));
+        let _ = ready.send(());
+        return;
+    }
+    let _ = ready.send(());
+
+    let mut refresh_deadline = None;
+    let mut fallback_deadline = Instant::now() + WATCH_FALLBACK_SCAN;
+    loop {
+        if stop.try_recv().is_ok() {
+            break;
+        }
+        let now = Instant::now();
+        let wait = refresh_deadline
+            .map(|deadline: Instant| deadline.saturating_duration_since(now))
+            .unwrap_or(WATCH_IDLE_TICK)
+            .min(WATCH_IDLE_TICK)
+            .min(fallback_deadline.saturating_duration_since(now));
+        match watch_events.recv_timeout(wait) {
+            Ok(Ok(event)) if is_library_content_event(&event, &library_root) => {
+                refresh_deadline = Some(Instant::now() + WATCH_DEBOUNCE);
+            }
+            Ok(Ok(_)) => {}
+            Ok(Err(reason)) => send_watcher_error(&events, epoch, anyhow!(reason)),
+            Err(RecvTimeoutError::Timeout) => {}
+            Err(RecvTimeoutError::Disconnected) => {
+                send_watcher_error(
+                    &events,
+                    epoch,
+                    anyhow!("Castle's filesystem watcher stopped unexpectedly."),
+                );
+                break;
+            }
+        }
+
+        let now = Instant::now();
+        let notification_due = refresh_deadline.is_some_and(|deadline| now >= deadline);
+        let fallback_due = now >= fallback_deadline;
+        if notification_due || fallback_due {
+            refresh_deadline = None;
+            fallback_deadline = now + WATCH_FALLBACK_SCAN;
+            if commands
+                .send(LibraryCommand::RefreshExternalChanges { reply: None })
+                .is_err()
+            {
+                break;
+            }
+        }
+    }
+}
+
+fn is_library_content_event(event: &Event, library_root: &Path) -> bool {
+    if matches!(event.kind, EventKind::Access(_)) {
+        return false;
+    }
+    event.paths.iter().any(|path| {
+        path.strip_prefix(library_root).is_ok_and(|relative| {
+            relative
+                .components()
+                .all(|component| !component.as_os_str().to_string_lossy().starts_with('.'))
+        })
+    })
+}
+
+fn send_watcher_error(
+    events: &SyncSender<RuntimeEvent>,
+    epoch: SessionEpoch,
+    reason: anyhow::Error,
+) {
+    let _ = send_status(
+        events,
+        epoch,
+        RuntimeServiceStatus::failed(ServiceStatusKind::Stale, &reason),
+    );
 }
 
 fn run_library_session(
@@ -671,16 +810,23 @@ fn run_library_session(
                             &events,
                             ContentOperation::Refresh,
                         );
-                        send_reply(reply, published.map(|()| true));
+                        if let Err(reason) = &published {
+                            let _ = send_status(
+                                &events,
+                                epoch,
+                                RuntimeServiceStatus::failed(ServiceStatusKind::Stale, reason),
+                            );
+                        }
+                        send_optional_reply(reply, published.map(|()| true));
                     }
-                    Ok(None) => send_reply(reply, Ok(false)),
+                    Ok(None) => send_optional_reply(reply, Ok(false)),
                     Err(reason) => {
                         let _ = send_status(
                             &events,
                             epoch,
                             RuntimeServiceStatus::failed(ServiceStatusKind::Stale, &reason),
                         );
-                        send_reply(reply, Err(reason));
+                        send_optional_reply(reply, Err(reason));
                     }
                 }
             }
@@ -753,6 +899,12 @@ fn send_status(
 
 fn send_reply<T>(reply: Reply<T>, result: Result<T>) {
     let _ = reply.send(result.map_err(|reason| format!("{reason:#}")));
+}
+
+fn send_optional_reply<T>(reply: Option<Reply<T>>, result: Result<T>) {
+    if let Some(reply) = reply {
+        send_reply(reply, result);
+    }
 }
 
 pub fn configured_session_options(
@@ -921,6 +1073,57 @@ mod tests {
                             .any(|note| note.id == "notes/runtime_created")
                     );
                     assert!(snapshot.note_by_id("notes/runtime_created").is_some());
+                    break;
+                }
+                RuntimeEvent::ServiceStatus { .. } => {}
+                RuntimeEvent::LibraryReady { .. } => panic!("received two ready snapshots"),
+            }
+        }
+        session.shutdown();
+    }
+
+    #[test]
+    fn external_markdown_edits_are_debounced_and_published() {
+        let temporary = tempfile::tempdir().unwrap();
+        let library_root = temporary.path().join("library");
+        copy_tree(&repository_root().join("examples/library"), &library_root);
+        let cache_root = temporary.path().join("cache");
+        let (session, events) = LibrarySession::spawn(LibrarySessionOptions::new(
+            &library_root,
+            temporary.path(),
+            cache_root,
+        ));
+        let before = receive_ready(&events);
+        let welcome = before
+            .notes
+            .iter()
+            .find(|note| note.title == "Welcome to Castle")
+            .unwrap();
+        let welcome_id = welcome.id.clone();
+        let source_path = library_root.join(&welcome.source_file);
+        let edited = fs::read_to_string(&source_path)
+            .unwrap()
+            .replace("synthetic library", "filesystem watcher");
+        assert!(edited.contains("filesystem watcher"));
+        fs::write(source_path, edited).unwrap();
+
+        loop {
+            match events.recv_timeout(Duration::from_secs(30)).unwrap() {
+                RuntimeEvent::ContentChanged {
+                    epoch,
+                    operation,
+                    snapshot,
+                    ..
+                } => {
+                    assert_eq!(epoch, session.epoch());
+                    assert_eq!(operation, ContentOperation::Refresh);
+                    let note_index = snapshot.note_index_by_id(&welcome_id).unwrap();
+                    assert!(
+                        snapshot
+                            .note_markdown(note_index)
+                            .unwrap()
+                            .contains("filesystem watcher")
+                    );
                     break;
                 }
                 RuntimeEvent::ServiceStatus { .. } => {}

@@ -218,9 +218,10 @@ domain changes only when it defines and tests rollback and conflict behavior.
 ### External filesystem changes
 
 The watcher sends a debounced `RefreshExternalChanges` command to the same
-session actor. The actor recompiles once, publishes a delta or replacement
-snapshot, and schedules the matching index generation. It never races a save on
-a separate `CastleService` instance.
+session actor. A low-frequency fingerprint scan supplies eventual consistency
+if an operating-system notification is coalesced or lost. The actor recompiles
+once, publishes a delta or replacement snapshot, and schedules the matching
+index generation. It never races a save on a separate `CastleService` instance.
 
 On a compile error, the last valid snapshot stays visible and the runtime emits
 a stale status with diagnostics and Retry. This matches the current desktop
@@ -232,8 +233,10 @@ behavior without requiring a child-process restart.
 2. If no usable library is selected, show the native library chooser.
 3. Allocate a new session epoch and show the shell immediately in a loading
    state.
-4. Open `CastleService` on the library worker and publish `LibraryReady`.
-5. Start its file watcher and open or rebuild the local index asynchronously.
+4. Register the file watcher before opening the service so no startup edit can
+   fall between the initial compilation and watcher subscription.
+5. Open `CastleService` on the library worker, publish `LibraryReady`, and open
+   or rebuild the local index asynchronously.
 6. Restore per-library preferences only after canonicalizing the library path.
 7. When switching, increment the epoch before cancelling the previous session.
 
@@ -282,9 +285,9 @@ castle_desktop/src/
     settings/
 ```
 
-The prototype theme and route have been separated from `ui.rs`; the remaining
-shell and Library code should be split as the foundation work continues. Each
-feature owns:
+The prototype theme, route, and epoch-aware `LibraryState` have been separated
+from `ui.rs`; the remaining shell and Library view code should be split as the
+foundation work continues. Each feature owns:
 
 - its GPUI model and actions;
 - pure selectors and presentation structs;
@@ -569,8 +572,9 @@ more screens:
 - [ ] Finish splitting the prototype's shell and Library code. Theme and typed
   routing are already separate from `ui.rs`.
 - [ ] Replace global keystroke capture with focused GPUI actions and input state.
-- [ ] Add library switching, filesystem watching, and stale-epoch race tests
-  before exposing writes in the UI.
+- [ ] Add library switching before exposing writes in the UI. Debounced
+  filesystem watching and stale-epoch rejection tests are implemented; the
+  native chooser and session replacement flow remain.
 - [ ] Build the Markdown reader spike, followed by the editor/IME spike; record
   the results and dependencies as architecture decisions before committing to
   the remaining feature schedule.
