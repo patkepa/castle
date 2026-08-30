@@ -1,6 +1,6 @@
 # GPUI desktop migration architecture
 
-Status: accepted; Milestone 0 implementation in progress
+Status: accepted; foundation and first Library/Tasks slices implemented
 Target: replace Castle's Electron desktop application with a native Rust and GPUI application  
 Web target: remains the existing React application
 
@@ -320,11 +320,14 @@ Domain rules move to core/runtime rather than becoming reusable UI helpers.
 - Feature models: created per workspace and addressed by stable entity IDs.
 
 GPUI actions now drive search focus, source-mode toggling, save, cancel, and
-text-editing commands. Search and source editing use focused
-`EntityInputHandler` entities, including IME handoff, Unicode grapheme movement,
-selection, and clipboard operations. Undo/redo, pointer-positioned selection,
-accessibility semantics, and large-document performance remain production
-editor gates.
+text-editing commands. Library actions also provide list/grid-aware directional
+selection and open the selected folder or note. Search and source editing use
+focused `EntityInputHandler` entities, including IME handoff, Unicode grapheme
+movement, selection, clipboard operations, compact delta-based undo/redo,
+pointer-positioned selection, find, and line/page navigation. The source view
+shapes and paints only visible lines through `uniform_list`; accessibility
+semantics and measured input latency on representative hardware remain release
+gates.
 
 ### Typed routing
 
@@ -400,12 +403,17 @@ view. Save always supplies the revision originally read and lets `castle_core`
 detect external changes. Read, Source, and split Edit/Preview modes consume the
 same `SourceDocument` session.
 
-The initial editor spike implements the safe data path: asynchronous source
-load, local validation, expected-revision save, preserved drafts on errors or
-conflicts, dirty navigation/library guards, and a dirty window-close prompt.
-Its lightweight text buffer is deliberately not yet the production editor:
-undo/redo, accurate pointer hit-testing, visible range selection, and large-file
-measurement still need the release-gate work above.
+The editor implementation combines the safe data path—asynchronous source load,
+local validation, expected-revision save, preserved drafts on errors or
+conflicts, dirty navigation/library guards, and a dirty window-close prompt—with
+a virtualized line renderer. It supports IME, grapheme movement, shaped-text
+pointer hit testing, range painting, clipboard, compact edit history, find, and
+line/page navigation without retaining a view entity per source line. It opens
+documents at the beginning and retains only bounded visible-line layout caches.
+
+The remaining editor gate is evidence, not another text-area rewrite: profile
+large representative notes, exercise assistive technology against the packaged
+application, and resolve any platform-specific input/accessibility defects.
 
 ### Canvas, maps, sheets, and media
 
@@ -498,6 +506,14 @@ inside each feature.
 Exit gate: native and Electron golden fixtures produce equivalent record writes
 and projections for tasks, events, projects, people, and stash entries.
 
+The first native Tasks slice is now end-to-end: the typed route and Castle shell
+open a searchable/filterable kanban, cards navigate to their source note, and
+create, status transitions, checklist toggles, guarded delete, and delete undo
+all execute on the runtime worker with session-epoch checks. The remaining Tasks
+work is the detailed inspector/form, list and custom-group modes, ordering, and
+keyboard/accessibility polish; those build on the mutation path already in
+place.
+
 ### Milestone 4 — document workspaces and media
 
 - Native JSON Canvas editor and media import.
@@ -549,11 +565,12 @@ all release artifacts pass platform security and packaging checks.
 - **Packaging:** launch, library-open, edit/save, relaunch, and asset loading from
   the signed packaged artifact—not only `cargo run`.
 
-The current unbundled debug binary has no registered macOS application identity,
-so accessibility-driven UI automation cannot address it by bundle ID. Packaging
-must establish that identity before the native picker and other system surfaces
-can join the scripted UI suite; process and runtime integration smoke tests cover
-the development binary in the interim.
+`cargo xtask package desktop` now creates the configured `.app` with the
+`application.bundle_id` identity, icon, minimum macOS version, and code signature;
+the default ad-hoc identity supports local smoke tests and `--identity` accepts
+a distribution identity. `--make` adds the zipped artifact. Scripted UI and
+accessibility checks must target this bundle rather than relying only on
+`cargo run`; notarization and clean-machine launch remain release gates.
 
 ### Performance rules
 
@@ -607,8 +624,14 @@ more screens:
 - [x] Build the Markdown reader spike with headings, lists, links, code, tables,
   assets, outline, and backlinks.
 - [x] Build the safe editor/IME spike with revision-checked saving, conflict
-  preservation, and dirty-state protection. Complete the production editor
-  release gates before enabling source editing by default.
+  preservation, dirty-state protection, compact undo/redo, shaped pointer
+  selection, find/navigation, and virtualized large-document rendering.
+- [x] Add keyboard selection and bounded rendering to Library list/grid views.
+- [x] Package a signed-identity macOS `.app` and optional zip through `xtask`.
+- [x] Add the first complete Tasks mutation loop: browse/filter/search, create,
+  status and checklist changes, delete, and restore.
+- [ ] Deferred by explicit product decision: Electron/native Markdown reader
+  parity fixtures. Resume this separately before final Electron cutover.
 
 This ordering turns the current visual prototype into a durable application
 base while keeping every subsequent feature migration isolated, testable, and

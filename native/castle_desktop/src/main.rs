@@ -46,6 +46,9 @@ fn main() {
             .update(cx, |_, _, cx| cx.entity())
             .expect("failed to access Castle's root view");
         window
+            .update(cx, |view, window, _| view.focus_shell(window))
+            .expect("failed to focus Castle's shell");
+        window
             .update(cx, |_, window, cx| {
                 let view = view.downgrade();
                 window.on_window_should_close(cx, move |window, cx| {

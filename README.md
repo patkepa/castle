@@ -37,6 +37,7 @@ desktop app is the default build and run target:
 cargo xtask build
 cargo xtask run -- --library /path/to/library
 cargo xtask check desktop
+cargo xtask package desktop
 ```
 
 Use `cargo xtask --help` to discover the web, native engine, generation,
@@ -56,10 +57,9 @@ files, not by copying a populated working directory.
 
 ## Distribution targets
 
-Castle has one shared React application with two distribution targets. The web
-target is a static, read-only application deployed behind Cloudflare Access.
-The Electron target edits source Markdown and provides interactive record
-operations without adding write capabilities to the web deployment.
+Castle has a static read-only React web target and a native Rust/GPUI desktop
+target. The legacy Electron desktop remains available during the migration so
+unported workflows retain a production path; it is not the target architecture.
 
 The explicit web commands are `cargo xtask run web`, `cargo xtask build web`,
 and `cargo xtask deploy web`. The existing npm commands remain compatible
@@ -70,6 +70,8 @@ desktop target. The native application lives in `native/castle_desktop/`, with
 its application/session layer in `native/castle_runtime/`. Runtime boundaries,
 feature milestones, safety rules, and Electron cutover criteria are in the
 [GPUI desktop migration architecture](docs/gpui-desktop-architecture.md).
+`cargo xtask package desktop` creates an ad-hoc-signed local macOS app bundle;
+add `--make` for a zip or `--identity` for a distribution signing identity.
 
 Cloudflare's default build image supplies Node but not Rust, while Castle's
 content and contract generators are Rust programs. Set the Cloudflare build

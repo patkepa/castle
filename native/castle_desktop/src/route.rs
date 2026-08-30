@@ -5,6 +5,7 @@ pub(crate) enum Route {
         directory: Vec<String>,
     },
     Note(String),
+    Tasks,
     Placeholder(&'static str),
 }
 
@@ -14,7 +15,7 @@ impl Route {
             Self::Library { .. } | Self::Note(_) => "library",
             Self::Placeholder("Home") => "home",
             Self::Placeholder("People") => "people",
-            Self::Placeholder("Tasks") => "tasks",
+            Self::Tasks => "tasks",
             Self::Placeholder("Calendar") => "calendar",
             Self::Placeholder("Canvas") => "canvas",
             Self::Placeholder("Stash") => "stash",
@@ -28,5 +29,9 @@ impl Route {
 
     pub(crate) fn is_note(&self) -> bool {
         matches!(self, Self::Note(_))
+    }
+
+    pub(crate) fn is_tasks(&self) -> bool {
+        matches!(self, Self::Tasks)
     }
 }

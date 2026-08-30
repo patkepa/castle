@@ -35,8 +35,9 @@
     "test": "cargo xtask test web",
     "check": "cargo xtask check",
     "preview": "cargo xtask run preview --",
-    "package:desktop": "cargo xtask package electron",
-    "make:desktop": "cargo xtask package electron --make",
+    "package:desktop": "cargo xtask package desktop",
+    "make:desktop": "cargo xtask package desktop --make",
+    "package:electron": "cargo xtask package electron",
     "deploy": "cargo xtask deploy web",
     "deploy:web": "cargo xtask deploy web"
   },

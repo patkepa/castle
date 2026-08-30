@@ -3,7 +3,7 @@ use gpui::{AnyElement, Context, Entity, Focusable, FontWeight, Window, div, prel
 
 use super::{
     CastleApp,
-    actions::{Cancel, SaveNote, ToggleEdit},
+    actions::{Cancel, FindNext, FindPrevious, SaveNote, ToggleEdit},
     text_input::{TextInput, TextInputKind},
 };
 use crate::{route::Route, theme::*};
@@ -23,6 +23,7 @@ pub(super) struct NoteEditor {
     revision: String,
     saved_markdown: String,
     buffer: Option<Entity<TextInput>>,
+    pub(super) find_input: Option<Entity<TextInput>>,
     phase: EditorPhase,
     pub(super) message: Option<String>,
     pub(super) confirm_discard: bool,
@@ -36,6 +37,7 @@ impl NoteEditor {
             revision: String::new(),
             saved_markdown: String::new(),
             buffer: None,
+            find_input: None,
             phase: EditorPhase::Loading,
             message: None,
             confirm_discard: false,
@@ -122,16 +124,25 @@ impl CastleApp {
 
     fn finish_loading_editor(&mut self, document: SourceDocument, cx: &mut Context<Self>) {
         let buffer = cx.new(|cx| TextInput::new(cx, TextInputKind::Editor, "Markdown source"));
+        let find_input = cx.new(|cx| TextInput::new(cx, TextInputKind::Find, "Find in source…"));
         buffer.update(cx, |buffer, cx| {
             buffer.set_text(document.markdown.clone(), cx)
         });
         cx.observe(&buffer, |_, _, cx| cx.notify()).detach();
+        let searchable_buffer = buffer.clone();
+        cx.observe(&find_input, move |_, find_input, cx| {
+            let query = find_input.read(cx).text().to_owned();
+            searchable_buffer.update(cx, |buffer, cx| buffer.set_find_query(query, cx));
+            cx.notify();
+        })
+        .detach();
         self.editor = Some(NoteEditor {
             note_id: document.note_id,
             source_file: document.source_file,
             revision: document.revision,
             saved_markdown: document.markdown,
             buffer: Some(buffer),
+            find_input: Some(find_input),
             phase: EditorPhase::Ready,
             message: None,
             confirm_discard: false,
@@ -239,13 +250,17 @@ impl CastleApp {
             .id("source-editor")
             .min_h_0()
             .flex_1()
-            .overflow_y_scroll()
+            .overflow_hidden()
+            .flex()
+            .flex_col()
             .bg(rgb(CANVAS))
             .child(
                 div()
                     .max_w(px(960.0))
                     .mx_auto()
-                    .p_8()
+                    .px_8()
+                    .pt_6()
+                    .pb_4()
                     .child(
                         div()
                             .flex()
@@ -331,13 +346,46 @@ impl CastleApp {
                     }),
             );
         if let Some(buffer) = &editor.buffer {
+            let find_summary = buffer.read(cx).find_summary();
             page = page.child(
                 div()
                     .max_w(px(960.0))
                     .mx_auto()
                     .px_8()
-                    .pb_12()
-                    .child(buffer.clone()),
+                    .pb_6()
+                    .w_full()
+                    .min_h_0()
+                    .flex_1()
+                    .flex()
+                    .flex_col()
+                    .when_some(editor.find_input.clone(), |editor, find_input| {
+                        editor.child(
+                            div()
+                                .flex_none()
+                                .flex()
+                                .items_center()
+                                .gap_2()
+                                .pb_3()
+                                .child(find_input)
+                                .child(div().text_xs().text_color(rgb(MUTED)).child(find_summary))
+                                .child(div().flex_1())
+                                .child(self.editor_button(
+                                    "find-previous",
+                                    "PREVIOUS",
+                                    true,
+                                    |this, cx| this.find_editor_match(true, cx),
+                                    cx,
+                                ))
+                                .child(self.editor_button(
+                                    "find-next",
+                                    "NEXT",
+                                    true,
+                                    |this, cx| this.find_editor_match(false, cx),
+                                    cx,
+                                )),
+                        )
+                    })
+                    .child(div().min_h_0().flex_1().child(buffer.clone())),
             );
         }
         Some(page.into_any_element())
@@ -389,11 +437,45 @@ impl CastleApp {
         self.save_editor(cx);
     }
 
-    pub(super) fn cancel(&mut self, _: &Cancel, _: &mut Window, cx: &mut Context<Self>) {
+    fn find_editor_match(&mut self, backwards: bool, cx: &mut Context<Self>) {
+        if let Some(buffer) = self
+            .editor
+            .as_ref()
+            .and_then(|editor| editor.buffer.as_ref())
+        {
+            buffer.update(cx, |buffer, cx| buffer.find_next(backwards, cx));
+        }
+    }
+
+    pub(super) fn find_next_action(
+        &mut self,
+        _: &FindNext,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.find_editor_match(false, cx);
+    }
+
+    pub(super) fn find_previous_action(
+        &mut self,
+        _: &FindPrevious,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.find_editor_match(true, cx);
+    }
+
+    pub(super) fn cancel(&mut self, _: &Cancel, window: &mut Window, cx: &mut Context<Self>) {
         if self.editor.is_some() {
             self.request_close_editor(cx);
+        } else if self.route.is_tasks() {
+            self.close_task_overlays(cx);
+            self.task_search_input
+                .update(cx, |input, cx| input.clear(cx));
+            self.focus_shell(window);
         } else {
             self.search_input.update(cx, |input, cx| input.clear(cx));
+            self.focus_shell(window);
         }
     }
 }

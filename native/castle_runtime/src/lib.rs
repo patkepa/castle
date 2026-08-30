@@ -15,14 +15,14 @@ use std::{
 
 use anyhow::{Context, Result, anyhow};
 pub use castle_contracts::{
-    CatalogNote, KnowledgeBase, LibraryFolder, SaveSourceInput, SaveSourceResult, SectionSummary,
-    SourceDocument,
+    CatalogNote, CreateTaskInput, DeleteTaskInput, DeleteTaskResult, KnowledgeBase, LibraryFolder,
+    MutateTaskInput, RestoreTaskInput, SaveSourceInput, SaveSourceResult, SectionSummary,
+    SourceDocument, Task, TaskCommand, TaskFields, TaskMutationResult, TaskStatus,
 };
 use castle_contracts::{
-    CompilationDelta, CreateFolderInput, CreateFolderResult, CreateSourceInput, CreateTaskInput,
-    DeleteFolderInput, DeleteFolderResult, DeleteSourceInput, DeleteSourceResult, DeleteTaskInput,
-    DeleteTaskResult, MoveSourceInput, MoveSourceResult, MutateTaskInput, PersonMutationResult,
-    RestoreSourceInput, RestoreTaskInput, ServiceState, TaskMutationResult, UpdatePersonInput,
+    CompilationDelta, CreateFolderInput, CreateFolderResult, CreateSourceInput, DeleteFolderInput,
+    DeleteFolderResult, DeleteSourceInput, DeleteSourceResult, MoveSourceInput, MoveSourceResult,
+    PersonMutationResult, RestoreSourceInput, ServiceState, UpdatePersonInput,
 };
 use castle_core::{CastleCompilation, CastleService, ServiceOptions};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
@@ -477,6 +477,22 @@ impl LibraryClient {
 
     pub fn save_source(&self, input: SaveSourceInput) -> Result<SaveSourceResult> {
         self.request(|reply| LibraryCommand::SaveSource { input, reply })
+    }
+
+    pub fn mutate_task(&self, input: MutateTaskInput) -> Result<TaskMutationResult> {
+        self.request(|reply| LibraryCommand::MutateTask { input, reply })
+    }
+
+    pub fn create_task(&self, input: CreateTaskInput) -> Result<TaskMutationResult> {
+        self.request(|reply| LibraryCommand::CreateTask { input, reply })
+    }
+
+    pub fn delete_task(&self, input: DeleteTaskInput) -> Result<DeleteTaskResult> {
+        self.request(|reply| LibraryCommand::DeleteTask { input, reply })
+    }
+
+    pub fn restore_task(&self, input: RestoreTaskInput) -> Result<TaskMutationResult> {
+        self.request(|reply| LibraryCommand::RestoreTask { input, reply })
     }
 
     fn request<T>(&self, command: impl FnOnce(Reply<T>) -> LibraryCommand) -> Result<T> {
@@ -1193,6 +1209,59 @@ mod tests {
                             .any(|note| note.id == "notes/runtime_created")
                     );
                     assert!(snapshot.note_by_id("notes/runtime_created").is_some());
+                    break;
+                }
+                RuntimeEvent::ServiceStatus { .. } => {}
+                RuntimeEvent::LibraryReady { .. } => panic!("received two ready snapshots"),
+            }
+        }
+        session.shutdown();
+    }
+
+    #[test]
+    fn public_client_task_mutations_publish_the_updated_snapshot() {
+        let temporary = tempfile::tempdir().unwrap();
+        let library_root = temporary.path().join("library");
+        copy_tree(&repository_root().join("examples/library"), &library_root);
+        let cache_root = temporary.path().join("cache");
+        let (session, events) = LibrarySession::spawn(LibrarySessionOptions::new(
+            &library_root,
+            temporary.path(),
+            cache_root,
+        ));
+        let before = receive_ready(&events);
+        let task = before.tasks.first().expect("example task").clone();
+        let status = if task.status == TaskStatus::InProgress {
+            TaskStatus::Todo
+        } else {
+            TaskStatus::InProgress
+        };
+
+        let result = session
+            .client()
+            .mutate_task(MutateTaskInput {
+                task_id: task.id.clone(),
+                command: TaskCommand::ChangeStatus { status },
+            })
+            .unwrap();
+        assert_eq!(result.task.status, status);
+
+        loop {
+            match events.recv_timeout(Duration::from_secs(30)).unwrap() {
+                RuntimeEvent::ContentChanged {
+                    operation,
+                    snapshot,
+                    ..
+                } => {
+                    assert_eq!(operation, ContentOperation::MutateTask);
+                    assert_eq!(
+                        snapshot
+                            .tasks
+                            .iter()
+                            .find(|candidate| candidate.id == task.id)
+                            .map(|candidate| candidate.status),
+                        Some(status)
+                    );
                     break;
                 }
                 RuntimeEvent::ServiceStatus { .. } => {}

@@ -4,9 +4,11 @@ mod library;
 mod markdown;
 mod notes;
 mod shell;
+mod tasks;
 mod text_input;
 
 use std::{
+    ops::Range,
     path::PathBuf,
     sync::{Arc, Mutex, mpsc::Receiver},
 };
@@ -17,8 +19,9 @@ use castle_runtime::{
     RuntimeEvent, SectionSummary,
 };
 use gpui::{
-    AnyElement, Context, Entity, Focusable, FontWeight, IntoElement, PathPromptOptions,
-    SharedString, Window, div, prelude::*, px, rgb,
+    AnyElement, Context, Entity, FocusHandle, Focusable, FontWeight, IntoElement,
+    PathPromptOptions, ScrollStrategy, SharedString, UniformListScrollHandle, Window, div,
+    prelude::*, px, rgb, uniform_list,
 };
 
 use crate::{library_state::LibraryState, route::Route, theme::*};
@@ -47,6 +50,12 @@ pub struct CastleApp {
     search_input: Entity<TextInput>,
     editor: Option<editor::NoteEditor>,
     allow_close: bool,
+    shell_focus: FocusHandle,
+    library_selection: usize,
+    library_scroll: UniformListScrollHandle,
+    task_search_input: Entity<TextInput>,
+    new_task_input: Entity<TextInput>,
+    tasks: tasks::TasksState,
 }
 
 impl CastleApp {
@@ -71,7 +80,17 @@ impl CastleApp {
         let client = session.as_ref().map(LibrarySession::client);
         let search_input =
             cx.new(|cx| TextInput::new(cx, TextInputKind::Search, "Filter collections"));
-        cx.observe(&search_input, |_, _, cx| cx.notify()).detach();
+        cx.observe(&search_input, |this, _, cx| {
+            this.library_selection = 0;
+            cx.notify();
+        })
+        .detach();
+        let task_search_input =
+            cx.new(|cx| TextInput::new(cx, TextInputKind::TaskSearch, "Filter tasks…"));
+        cx.observe(&task_search_input, |_, _, cx| cx.notify())
+            .detach();
+        let new_task_input = cx.new(|cx| TextInput::new(cx, TextInputKind::NewTask, "Task title…"));
+        cx.observe(&new_task_input, |_, _, cx| cx.notify()).detach();
 
         Self {
             launcher,
@@ -92,6 +111,12 @@ impl CastleApp {
             search_input,
             editor: None,
             allow_close: false,
+            shell_focus: cx.focus_handle().tab_stop(true),
+            library_selection: 0,
+            library_scroll: UniformListScrollHandle::new(),
+            task_search_input,
+            new_task_input,
+            tasks: tasks::TasksState::default(),
         }
     }
 
@@ -264,6 +289,10 @@ impl CastleApp {
                 self.library_state.activate(session.epoch());
                 self.client = Some(session.client());
                 self.session = Some(session);
+                self.tasks = tasks::TasksState::default();
+                self.task_search_input
+                    .update(cx, |input, cx| input.clear(cx));
+                self.new_task_input.update(cx, |input, cx| input.clear(cx));
                 Self::subscribe_to_runtime(events, cx);
             }
             Err(reason) => self.library_state.fail_switch(format!("{reason:#}")),
@@ -282,12 +311,27 @@ impl CastleApp {
         }
         self.editor = None;
         self.route = route;
+        self.library_selection = 0;
         self.search_input.update(cx, |input, cx| input.clear(cx));
         cx.notify();
     }
 
     fn focus_search(&mut self, _: &FocusSearch, window: &mut Window, cx: &mut Context<Self>) {
-        window.focus(&self.search_input.focus_handle(cx));
+        if let Some(find_input) = self
+            .editor
+            .as_ref()
+            .and_then(|editor| editor.find_input.as_ref())
+        {
+            window.focus(&find_input.focus_handle(cx));
+        } else if self.route.is_tasks() {
+            window.focus(&self.task_search_input.focus_handle(cx));
+        } else {
+            window.focus(&self.search_input.focus_handle(cx));
+        }
+    }
+
+    pub(crate) fn focus_shell(&self, window: &mut Window) {
+        window.focus(&self.shell_focus);
     }
 
     fn render_sidebar(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -367,8 +411,8 @@ impl CastleApp {
             .child(self.sidebar_item("people", "⌘", "People", Route::Placeholder("People"), cx));
 
         navigation = navigation.child(self.sidebar_group_label("Workspace"));
+        navigation = navigation.child(self.sidebar_item("tasks", "✓", "Tasks", Route::Tasks, cx));
         for (id, glyph, label) in [
-            ("tasks", "✓", "Tasks"),
             ("calendar", "□", "Calendar"),
             ("canvas", "⊞", "Canvas"),
             ("stash", "↓", "Stash"),
@@ -522,6 +566,9 @@ impl CastleApp {
             .when(self.route.is_note(), |main| {
                 main.child(self.render_note_toolbar(cx))
             })
+            .when(self.route.is_tasks(), |main| {
+                main.child(self.render_tasks_toolbar(cx))
+            })
             .child(self.render_content(cx))
     }
 
@@ -663,6 +710,9 @@ impl CastleApp {
                         .child(div().truncate().child(note.title.clone()));
                 }
             }
+            Route::Tasks => {
+                breadcrumb = breadcrumb.child("Tasks");
+            }
             Route::Placeholder(label) => {
                 breadcrumb = breadcrumb.child(*label);
             }
@@ -800,7 +850,13 @@ impl CastleApp {
             .text_color(rgb(if selected { ACCENT_HOVER } else { MUTED }))
             .hover(|style| style.bg(rgb(HOVER)).text_color(rgb(TEXT)))
             .on_click(cx.listener(move |this, _, _, cx| {
-                this.view_mode = mode;
+                if this.view_mode != mode {
+                    this.view_mode = mode;
+                    this.library_scroll = UniformListScrollHandle::new();
+                    let columns = if mode == ViewMode::Grid { 3 } else { 1 };
+                    this.library_scroll
+                        .scroll_to_item(this.library_selection / columns, ScrollStrategy::Center);
+                }
                 cx.notify();
             }))
             .child(glyph)
@@ -1110,6 +1166,7 @@ impl CastleApp {
                 .render_library(library, section.as_deref(), directory, cx)
                 .into_any_element(),
             Route::Note(note_id) => self.render_note(library, note_id, cx),
+            Route::Tasks => self.render_tasks(cx),
             Route::Placeholder(label) => self.render_placeholder(label).into_any_element(),
         }
     }
@@ -1125,7 +1182,9 @@ impl CastleApp {
             .id("library-page")
             .min_h_0()
             .flex_1()
-            .overflow_y_scroll()
+            .overflow_hidden()
+            .flex()
+            .flex_col()
             .bg(rgb(CANVAS))
             .p_8()
             .pb_16();
@@ -1227,21 +1286,57 @@ impl CastleApp {
         sections: &[SectionSummary],
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let mut container = match self.view_mode {
-            ViewMode::Grid => div().grid().grid_cols(3),
-            ViewMode::List => div().flex().flex_col(),
-        }
+        let sections = sections.to_vec();
+        let columns = if self.view_mode == ViewMode::Grid {
+            3
+        } else {
+            1
+        };
+        let row_count = sections.len().div_ceil(columns);
+        let selected = self.library_selection.min(sections.len().saturating_sub(1));
+        let list_id = SharedString::from(format!("library-section-rows-{columns}"));
+        uniform_list(
+            list_id,
+            row_count,
+            cx.processor(move |this, rows: Range<usize>, _, cx| {
+                rows.map(|row| {
+                    let mut container = div()
+                        .h(px(if columns == 3 { 136.0 } else { 56.0 }))
+                        .w_full()
+                        .when(columns == 3, |row| row.grid().grid_cols(3))
+                        .when(columns == 1, |row| row.flex());
+                    for (index, section) in sections
+                        .iter()
+                        .enumerate()
+                        .take(((row + 1) * columns).min(sections.len()))
+                        .skip(row * columns)
+                    {
+                        container =
+                            container.child(div().min_w_0().w_full().child(this.section_tile(
+                                section,
+                                index == selected,
+                                cx,
+                            )));
+                    }
+                    container
+                })
+                .collect::<Vec<_>>()
+            }),
+        )
+        .min_h_0()
+        .flex_1()
         .border_t_1()
         .border_l_1()
-        .border_color(rgb(LINE));
-
-        for section in sections {
-            container = container.child(self.section_tile(section, cx));
-        }
-        container
+        .border_color(rgb(LINE))
+        .track_scroll(self.library_scroll.clone())
     }
 
-    fn section_tile(&self, section: &SectionSummary, cx: &mut Context<Self>) -> impl IntoElement {
+    fn section_tile(
+        &self,
+        section: &SectionSummary,
+        selected: bool,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let id = section.id.clone();
         let grid = self.view_mode == ViewMode::Grid;
         div()
@@ -1254,10 +1349,12 @@ impl CastleApp {
             .border_r_1()
             .border_b_1()
             .border_color(rgb(LINE))
+            .bg(rgb(if selected { ACTIVE } else { CANVAS }))
             .cursor_pointer()
             .text_color(rgb(TEXT))
             .hover(|style| style.bg(rgb(HOVER)))
-            .on_click(cx.listener(move |this, _, _, cx| {
+            .on_click(cx.listener(move |this, _, window, cx| {
+                this.focus_shell(window);
                 this.navigate(
                     Route::Library {
                         section: Some(id.clone()),
@@ -1301,29 +1398,69 @@ impl CastleApp {
         notes: &[usize],
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let mut container = match self.view_mode {
-            ViewMode::Grid => div().grid().grid_cols(3),
-            ViewMode::List => div().flex().flex_col(),
-        }
+        let mut entries = folders
+            .iter()
+            .map(|index| LibraryEntry::Folder(library.folders[*index].clone()))
+            .collect::<Vec<_>>();
+        entries.extend(
+            notes
+                .iter()
+                .map(|index| LibraryEntry::Note(Box::new(library.notes[*index].clone()))),
+        );
+        let section_id = section_id.to_owned();
+        let columns = if self.view_mode == ViewMode::Grid {
+            3
+        } else {
+            1
+        };
+        let row_count = entries.len().div_ceil(columns);
+        let selected = self.library_selection.min(entries.len().saturating_sub(1));
+        let list_id = SharedString::from(format!("library-entry-rows-{section_id}-{columns}"));
+        uniform_list(
+            list_id,
+            row_count,
+            cx.processor(move |this, rows: Range<usize>, _, cx| {
+                rows.map(|row| {
+                    let mut container = div()
+                        .h(px(if columns == 3 { 136.0 } else { 56.0 }))
+                        .w_full()
+                        .when(columns == 3, |row| row.grid().grid_cols(3))
+                        .when(columns == 1, |row| row.flex());
+                    for (index, entry) in entries
+                        .iter()
+                        .enumerate()
+                        .take(((row + 1) * columns).min(entries.len()))
+                        .skip(row * columns)
+                    {
+                        let tile = match entry {
+                            LibraryEntry::Folder(folder) => this
+                                .folder_tile(&section_id, folder, index == selected, cx)
+                                .into_any_element(),
+                            LibraryEntry::Note(note) => this
+                                .note_tile(note, index == selected, cx)
+                                .into_any_element(),
+                        };
+                        container = container.child(div().min_w_0().w_full().child(tile));
+                    }
+                    container
+                })
+                .collect::<Vec<_>>()
+            }),
+        )
+        .min_h_0()
+        .flex_1()
         .mt_6()
         .border_t_1()
         .border_l_1()
-        .border_color(rgb(LINE));
-
-        for folder_index in folders {
-            container =
-                container.child(self.folder_tile(section_id, &library.folders[*folder_index], cx));
-        }
-        for note_index in notes {
-            container = container.child(self.note_tile(&library.notes[*note_index], cx));
-        }
-        container
+        .border_color(rgb(LINE))
+        .track_scroll(self.library_scroll.clone())
     }
 
     fn folder_tile(
         &self,
         section_id: &str,
         folder: &LibraryFolder,
+        selected: bool,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let destination = Route::Library {
@@ -1355,12 +1492,18 @@ impl CastleApp {
             name,
             detail,
             false,
+            selected,
             move |this, cx| this.navigate(destination.clone(), cx),
             cx,
         )
     }
 
-    fn note_tile(&self, note: &CatalogNote, cx: &mut Context<Self>) -> impl IntoElement {
+    fn note_tile(
+        &self,
+        note: &CatalogNote,
+        selected: bool,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let note_id = note.id.clone();
         self.entry_tile(
             SharedString::from(format!("note-tile-{}", note.id)),
@@ -1372,6 +1515,7 @@ impl CastleApp {
                 note.tags.join(" · ")
             },
             true,
+            selected,
             move |this, cx| this.navigate(Route::Note(note_id.clone()), cx),
             cx,
         )
@@ -1385,6 +1529,7 @@ impl CastleApp {
         title: String,
         detail: String,
         note: bool,
+        selected: bool,
         on_open: impl Fn(&mut Self, &mut Context<Self>) + 'static,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
@@ -1399,9 +1544,13 @@ impl CastleApp {
             .border_r_1()
             .border_b_1()
             .border_color(rgb(LINE))
+            .bg(rgb(if selected { ACTIVE } else { CANVAS }))
             .cursor_pointer()
             .hover(|style| style.bg(rgb(HOVER)))
-            .on_click(cx.listener(move |this, _, _, cx| on_open(this, cx)))
+            .on_click(cx.listener(move |this, _, window, cx| {
+                this.focus_shell(window);
+                on_open(this, cx)
+            }))
             .child(self.library_icon(glyph, note))
             .child(
                 div()

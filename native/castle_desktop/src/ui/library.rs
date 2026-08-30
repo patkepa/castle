@@ -1,9 +1,140 @@
-use castle_runtime::{AppSnapshot, CatalogNote};
+use castle_runtime::{AppSnapshot, CatalogNote, LibraryFolder};
+use gpui::{Context, ScrollStrategy, Window};
+
+use super::{
+    CastleApp,
+    actions::{LibraryDown, LibraryLeft, LibraryRight, LibraryUp, OpenSelected},
+};
+use crate::route::Route;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ViewMode {
     List,
     Grid,
+}
+
+#[derive(Clone)]
+pub(super) enum LibraryEntry {
+    Folder(LibraryFolder),
+    Note(Box<CatalogNote>),
+}
+
+impl CastleApp {
+    fn selectable_library_routes(&self, cx: &gpui::App) -> Vec<Route> {
+        let Some(library) = self.library_state.snapshot() else {
+            return Vec::new();
+        };
+        let query = self.search_input.read(cx).text().trim().to_lowercase();
+        let Route::Library { section, directory } = &self.route else {
+            return Vec::new();
+        };
+        if let Some(section_id) = section {
+            let folders = library
+                .folders_in_directory(section_id, directory)
+                .into_iter()
+                .filter(|index| {
+                    query.is_empty()
+                        || library.folders[*index]
+                            .directory
+                            .last()
+                            .is_some_and(|name| title_case(name).to_lowercase().contains(&query))
+                })
+                .map(|index| Route::Library {
+                    section: Some(section_id.clone()),
+                    directory: library.folders[index].directory.clone(),
+                });
+            let notes = library
+                .notes_in_directory(section_id, directory)
+                .into_iter()
+                .filter(|index| {
+                    query.is_empty() || note_search_text(&library.notes[*index]).contains(&query)
+                })
+                .map(|index| Route::Note(library.notes[index].id.clone()));
+            folders.chain(notes).collect()
+        } else {
+            library
+                .sections
+                .iter()
+                .filter(|section| {
+                    query.is_empty()
+                        || format!("{} {}", section.label, section.id)
+                            .to_lowercase()
+                            .contains(&query)
+                })
+                .map(|section| Route::Library {
+                    section: Some(section.id.clone()),
+                    directory: Vec::new(),
+                })
+                .collect()
+        }
+    }
+
+    fn move_library_selection(&mut self, delta: isize, cx: &mut Context<Self>) {
+        let count = self.selectable_library_routes(cx).len();
+        if count == 0 {
+            self.library_selection = 0;
+            return;
+        }
+        self.library_selection = self
+            .library_selection
+            .min(count - 1)
+            .saturating_add_signed(delta)
+            .min(count - 1);
+        let columns = if self.view_mode == ViewMode::Grid {
+            3
+        } else {
+            1
+        };
+        self.library_scroll
+            .scroll_to_item(self.library_selection / columns, ScrollStrategy::Center);
+        cx.notify();
+    }
+
+    pub(super) fn library_up(&mut self, _: &LibraryUp, _: &mut Window, cx: &mut Context<Self>) {
+        let step = if self.view_mode == ViewMode::Grid {
+            -3
+        } else {
+            -1
+        };
+        self.move_library_selection(step, cx);
+    }
+
+    pub(super) fn library_down(&mut self, _: &LibraryDown, _: &mut Window, cx: &mut Context<Self>) {
+        let step = if self.view_mode == ViewMode::Grid {
+            3
+        } else {
+            1
+        };
+        self.move_library_selection(step, cx);
+    }
+
+    pub(super) fn library_left(&mut self, _: &LibraryLeft, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_library_selection(-1, cx);
+    }
+
+    pub(super) fn library_right(
+        &mut self,
+        _: &LibraryRight,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.move_library_selection(1, cx);
+    }
+
+    pub(super) fn open_selected(
+        &mut self,
+        _: &OpenSelected,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(route) = self
+            .selectable_library_routes(cx)
+            .get(self.library_selection)
+            .cloned()
+        {
+            self.navigate(route, cx);
+        }
+    }
 }
 
 pub(super) fn recent_note_indexes(library: &AppSnapshot) -> Vec<usize> {

@@ -27,7 +27,15 @@ cargo xtask build native --release
 cargo xtask validate
 cargo xtask test native
 cargo xtask check desktop
+cargo xtask package desktop
+cargo xtask package desktop --make
 ```
+
+The desktop package command creates an ad-hoc-signed macOS application at
+`native/target/castle-package/Castle.app`; `--make` also emits a zip. Use
+`--identity` with a Developer ID identity for distributable builds. Electron
+packaging remains available explicitly as `cargo xtask package electron` during
+the migration.
 
 `build` reads its default library and repository paths from `CONFIGURATION.md`
 and publishes fetchable artifacts below `public/generated/`. Command-line

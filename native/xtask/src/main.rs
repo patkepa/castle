@@ -1,11 +1,13 @@
 use std::{
     env,
     ffi::{OsStr, OsString},
+    fs,
     path::{Path, PathBuf},
     process::Command,
 };
 
 use anyhow::{Context, Result, bail};
+use castle_core::load_castle_configuration;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 const NATIVE_MANIFEST: &str = "native/Cargo.toml";
@@ -44,7 +46,7 @@ enum Task {
     Validate(PassthroughArgs),
     /// Plan or apply Castle Record migrations.
     Migrate(PassthroughArgs),
-    /// Package the legacy Electron application.
+    /// Package the native desktop app or legacy Electron application.
     Package(PackageArgs),
     /// Check and deploy the web application through Cloudflare.
     Deploy(DeployArgs),
@@ -176,11 +178,15 @@ struct PackageArgs {
     /// Create a distributable archive with Electron Forge instead of an unpacked app.
     #[arg(long)]
     make: bool,
+    /// macOS signing identity. Defaults to ad-hoc signing (`-`).
+    #[arg(long, default_value = "-")]
+    identity: String,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
 enum PackageTarget {
     #[default]
+    Desktop,
     Electron,
 }
 
@@ -495,6 +501,7 @@ fn migrate(root: &Path, extra: Vec<OsString>) -> Result<()> {
 
 fn package(root: &Path, args: PackageArgs) -> Result<()> {
     match args.target {
+        PackageTarget::Desktop => package_desktop(root, &args),
         PackageTarget::Electron => {
             build(
                 root,
@@ -508,6 +515,148 @@ fn package(root: &Path, args: PackageArgs) -> Result<()> {
             run_npm_exec(root, "electron-forge", [action])
         }
     }
+}
+
+fn package_desktop(root: &Path, args: &PackageArgs) -> Result<()> {
+    if !cfg!(target_os = "macos") {
+        bail!("native desktop packaging currently supports macOS only");
+    }
+    build(
+        root,
+        BuildArgs {
+            target: BuildTarget::Desktop,
+            release: true,
+        },
+    )?;
+
+    let configuration = load_castle_configuration(root)?;
+    validate_bundle_name(&configuration.application_name)?;
+    let package_root = root.join("native/target/castle-package");
+    let app_name = format!("{}.app", configuration.application_name);
+    let app = package_root.join(&app_name);
+    if app.exists() {
+        fs::remove_dir_all(&app).with_context(|| format!("failed to replace {}", app.display()))?;
+    }
+    let contents = app.join("Contents");
+    let macos = contents.join("MacOS");
+    let resources = contents.join("Resources");
+    fs::create_dir_all(&macos)?;
+    fs::create_dir_all(&resources)?;
+
+    let binary = root.join("native/target/release/castle-desktop");
+    let packaged_binary = macos.join("castle-desktop");
+    fs::copy(&binary, &packaged_binary).with_context(|| {
+        format!(
+            "failed to copy {} into the application bundle",
+            binary.display()
+        )
+    })?;
+    fs::copy(
+        root.join("resources/app-icons/castle.icns"),
+        resources.join("Castle.icns"),
+    )?;
+    fs::write(
+        contents.join("Info.plist"),
+        desktop_info_plist(
+            &configuration.application_name,
+            &configuration.application_bundle_id,
+            env!("CARGO_PKG_VERSION"),
+        ),
+    )?;
+
+    run_process(
+        root,
+        "codesign",
+        vec![
+            "--force".into(),
+            "--deep".into(),
+            "--sign".into(),
+            args.identity.clone().into(),
+            app.as_os_str().to_owned(),
+        ],
+    )?;
+    run_process(
+        root,
+        "codesign",
+        vec![
+            "--verify".into(),
+            "--deep".into(),
+            app.as_os_str().to_owned(),
+        ],
+    )?;
+
+    if args.make {
+        let archive_name = format!("{}-macOS.zip", configuration.application_name);
+        let archive = package_root.join(&archive_name);
+        if archive.exists() {
+            fs::remove_file(&archive)?;
+        }
+        run_process(
+            &package_root,
+            "ditto",
+            vec![
+                "-c".into(),
+                "-k".into(),
+                "--sequesterRsrc".into(),
+                "--keepParent".into(),
+                app_name.into(),
+                archive_name.into(),
+            ],
+        )?;
+        println!("Created native desktop archive: {}", archive.display());
+    } else {
+        println!("Packaged native desktop app: {}", app.display());
+    }
+    Ok(())
+}
+
+fn validate_bundle_name(name: &str) -> Result<()> {
+    if name.is_empty()
+        || name == "."
+        || name == ".."
+        || name.contains('/')
+        || name.contains('\\')
+        || name.contains('\0')
+    {
+        bail!("application.name is not safe for a macOS bundle name");
+    }
+    Ok(())
+}
+
+fn xml_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
+fn desktop_info_plist(name: &str, bundle_id: &str, version: &str) -> String {
+    let name = xml_escape(name);
+    let bundle_id = xml_escape(bundle_id);
+    let version = xml_escape(version);
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleDisplayName</key><string>{name}</string>
+  <key>CFBundleExecutable</key><string>castle-desktop</string>
+  <key>CFBundleIconFile</key><string>Castle</string>
+  <key>CFBundleIdentifier</key><string>{bundle_id}</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleName</key><string>{name}</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>{version}</string>
+  <key>CFBundleVersion</key><string>{version}</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+"#
+    )
 }
 
 fn deploy(root: &Path, target: DeployTarget) -> Result<()> {
@@ -618,6 +767,17 @@ fn executable(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_bundle_plist_has_stable_identity() {
+        let plist = desktop_info_plist("Castle & Notes", "app.castle.desktop", "1.2.3");
+        assert!(plist.contains("app.castle.desktop"));
+        assert!(plist.contains("Castle &amp; Notes"));
+        assert!(plist.contains("castle-desktop"));
+        assert!(plist.contains("1.2.3"));
+        assert!(validate_bundle_name("Castle").is_ok());
+        assert!(validate_bundle_name("../Castle").is_err());
+    }
 
     #[test]
     fn build_and_run_default_to_the_native_desktop() {

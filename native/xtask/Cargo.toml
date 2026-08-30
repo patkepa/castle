@@ -9,4 +9,5 @@ publish.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+castle-core = { path = "../castle_core" }
 clap.workspace = true
