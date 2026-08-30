@@ -52,6 +52,51 @@ for (const obsoleteRoute of [
   }
 }
 
+const nativeCrateRules = [
+  {
+    crate: "castle_contracts",
+    allowedCastleDependencies: [],
+    allowGpui: false,
+  },
+  {
+    crate: "castle_core",
+    allowedCastleDependencies: ["castle-contracts"],
+    allowGpui: false,
+  },
+  {
+    crate: "castle_index",
+    allowedCastleDependencies: ["castle-contracts", "castle-core"],
+    allowGpui: false,
+  },
+  {
+    crate: "castle_runtime",
+    allowedCastleDependencies: ["castle-contracts", "castle-core", "castle-index"],
+    allowGpui: false,
+  },
+  {
+    crate: "castle_desktop",
+    allowedCastleDependencies: ["castle-runtime"],
+    allowGpui: true,
+  },
+];
+
+for (const rule of nativeCrateRules) {
+  const manifestPath = path.join(repositoryRoot, "native", rule.crate, "Cargo.toml");
+  if (!existsSync(manifestPath)) continue;
+  const dependencies = manifestDependencies(readFileSync(manifestPath, "utf8"));
+  const allowedCastleDependencies = new Set(rule.allowedCastleDependencies);
+  for (const dependency of dependencies) {
+    if (dependency.startsWith("castle-") && !allowedCastleDependencies.has(dependency)) {
+      violations.push(
+        `native/${rule.crate}: cannot depend on ${dependency}`,
+      );
+    }
+    if (dependency === "gpui" && !rule.allowGpui) {
+      violations.push(`native/${rule.crate}: only castle_desktop may depend on GPUI`);
+    }
+  }
+}
+
 if (violations.length > 0) {
   console.error(`Castle architecture checks failed:\n${violations.map((item) => `- ${item}`).join("\n")}`);
   process.exitCode = 1;
@@ -72,6 +117,22 @@ function importedPaths(source) {
   const pattern = /(?:\bfrom\s*|\bimport\s*\()\s*["']([^"']+)["']/g;
   for (const match of source.matchAll(pattern)) imports.push(match[1]);
   return imports;
+}
+
+function manifestDependencies(source) {
+  const dependencies = [];
+  let dependencySection = false;
+  for (const line of source.split(/\r?\n/)) {
+    const section = line.match(/^\s*\[([^\]]+)\]\s*$/)?.[1];
+    if (section) {
+      dependencySection = section.endsWith("dependencies");
+      continue;
+    }
+    if (!dependencySection) continue;
+    const dependency = line.match(/^\s*([A-Za-z0-9_-]+)\s*=/)?.[1];
+    if (dependency) dependencies.push(dependency);
+  }
+  return dependencies;
 }
 
 function isWithin(candidate, directory) {

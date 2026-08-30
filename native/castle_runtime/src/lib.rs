@@ -708,10 +708,16 @@ fn finish_mutation<T>(
     result: Result<T>,
 ) {
     match result {
-        Ok(value) => match publish_current(service, epoch, events, operation) {
-            Ok(()) => send_reply(reply, Ok(value)),
-            Err(reason) => send_reply(reply, Err(reason)),
-        },
+        Ok(value) => {
+            if let Err(reason) = publish_current(service, epoch, events, operation) {
+                let _ = send_status(
+                    events,
+                    epoch,
+                    RuntimeServiceStatus::failed(ServiceStatusKind::Stale, &reason),
+                );
+            }
+            send_reply(reply, Ok(value));
+        }
         Err(reason) => send_reply(reply, Err(reason)),
     }
 }
@@ -725,6 +731,7 @@ fn publish_current(
     let compilation = service.publication_compilation();
     let delta = service.compilation_delta(&compilation)?;
     let snapshot = Arc::new(AppSnapshot::new(epoch, compilation));
+    service.acknowledge_current_publication();
     events
         .send(RuntimeEvent::ContentChanged {
             epoch,
@@ -733,7 +740,6 @@ fn publish_current(
             snapshot,
         })
         .map_err(|_| anyhow!("Castle's runtime event receiver was closed."))?;
-    service.acknowledge_current_publication();
     Ok(())
 }
 
@@ -767,7 +773,7 @@ pub fn configured_session_options(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{fs, time::Duration};
 
     use super::*;
 
@@ -776,6 +782,31 @@ mod tests {
             .join("../..")
             .canonicalize()
             .unwrap()
+    }
+
+    fn copy_tree(source: &Path, destination: &Path) {
+        fs::create_dir_all(destination).unwrap();
+        for entry in fs::read_dir(source).unwrap() {
+            let entry = entry.unwrap();
+            let target = destination.join(entry.file_name());
+            if entry.file_type().unwrap().is_dir() {
+                copy_tree(&entry.path(), &target);
+            } else {
+                fs::copy(entry.path(), target).unwrap();
+            }
+        }
+    }
+
+    fn receive_ready(events: &Receiver<RuntimeEvent>) -> Arc<AppSnapshot> {
+        loop {
+            match events.recv_timeout(Duration::from_secs(30)).unwrap() {
+                RuntimeEvent::LibraryReady { snapshot, .. } => return snapshot,
+                RuntimeEvent::ServiceStatus { .. } => {}
+                RuntimeEvent::ContentChanged { .. } => {
+                    panic!("content changed before the library became ready")
+                }
+            }
+        }
     }
 
     #[test]
@@ -848,5 +879,54 @@ mod tests {
                 .iter()
                 .all(|index| snapshot.folders[*index].directory.len() == 1)
         );
+    }
+
+    #[test]
+    fn successful_mutations_publish_authoritative_snapshots_and_deltas() {
+        let temporary = tempfile::tempdir().unwrap();
+        let library_root = temporary.path().join("library");
+        copy_tree(&repository_root().join("examples/library"), &library_root);
+        let cache_root = temporary.path().join("cache");
+        let (session, events) = LibrarySession::spawn(LibrarySessionOptions::new(
+            &library_root,
+            temporary.path(),
+            cache_root,
+        ));
+        let before = receive_ready(&events);
+        assert!(before.note_by_id("notes/runtime_created").is_none());
+
+        session
+            .create_source(CreateSourceInput {
+                note_id: "notes/runtime_created".into(),
+                source_file: "notes/runtime_created.md".into(),
+                markdown: "# Runtime Created\n\nWritten through the session actor.\n".into(),
+            })
+            .unwrap();
+
+        loop {
+            match events.recv_timeout(Duration::from_secs(30)).unwrap() {
+                RuntimeEvent::ContentChanged {
+                    epoch,
+                    operation,
+                    delta,
+                    snapshot,
+                } => {
+                    assert_eq!(epoch, session.epoch());
+                    assert_eq!(operation, ContentOperation::CreateSource);
+                    assert!(
+                        delta
+                            .notes
+                            .upserted
+                            .iter()
+                            .any(|note| note.id == "notes/runtime_created")
+                    );
+                    assert!(snapshot.note_by_id("notes/runtime_created").is_some());
+                    break;
+                }
+                RuntimeEvent::ServiceStatus { .. } => {}
+                RuntimeEvent::LibraryReady { .. } => panic!("received two ready snapshots"),
+            }
+        }
+        session.shutdown();
     }
 }
