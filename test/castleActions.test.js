@@ -4,12 +4,12 @@ import {
   rankCastleActions,
   readRecentCastleActionIds,
   recordRecentCastleAction,
-} from "../src/features/castle_actions/castleActionModels.ts";
+} from "../apps/desktop/src/features/castle_actions/castleActionModels.ts";
 import {
   createJournalSourceInput,
   createPersonSourceInput,
   createQuickTaskFields,
-} from "../src/lib/castleActionCreation.ts";
+} from "../apps/desktop/src/lib/castleActionCreation.ts";
 
 const actions = [
   {

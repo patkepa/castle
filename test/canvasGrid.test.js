@@ -5,7 +5,7 @@ import {
   snapCanvasValue,
   snapCanvasValueInDirection,
   snappedCanvasDragDelta,
-} from "../src/features/canvas/canvasGrid.ts";
+} from "../apps/desktop/src/features/canvas/canvasGrid.ts";
 
 test("snaps canvas geometry to a subtle ten-unit grid", () => {
   assert.equal(canvasSnapGridSize, 10);

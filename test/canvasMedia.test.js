@@ -4,7 +4,7 @@ import {
   canvasMediaAccept,
   canvasMediaKind,
   canvasMediaUrl,
-} from "../src/features/canvas/canvasMedia.ts";
+} from "../apps/desktop/src/features/canvas/canvasMedia.ts";
 
 test("recognizes Canvas image and PDF file types", () => {
   assert.equal(canvasMediaKind("photo.PNG"), "image");

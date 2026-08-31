@@ -5,7 +5,7 @@ import {
   createSheetRoute,
   decodeSheetRoutePath,
   getSheetDirectoryContents,
-} from "../src/features/sheets/sheet_library.ts";
+} from "../apps/desktop/src/features/sheets/sheet_library.ts";
 
 const sheet = (relativePath) => ({
   relativePath,

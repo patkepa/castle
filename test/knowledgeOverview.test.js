@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseCastleKnowledgeOverview } from "../src/platform/knowledge_queries.ts";
+import { parseCastleKnowledgeOverview } from "../apps/desktop/src/platform/knowledge_queries.ts";
 
 test("validates typed SQL-backed knowledge overview responses", () => {
   const overview = parseCastleKnowledgeOverview({

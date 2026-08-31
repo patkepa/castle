@@ -11,7 +11,7 @@ import {
 // Astro bundles this module before prerendering, so import.meta.url no longer
 // points into src/ at route generation time. Workspace scripts run with
 // apps/web as their working directory, which is the stable snapshot anchor.
-const publicRoot = path.resolve(process.cwd(), ".castle/public");
+const publicRoot = path.resolve(process.cwd(), "public");
 
 export type CastleNote = CatalogNote;
 export type CastleCatalog = KnowledgeBase;

@@ -9,7 +9,7 @@ import {
 import {
   CastleNativeError,
   CastleNativeService,
-} from "../electron/native_service.ts";
+} from "../apps/desktop/electron/native_service.ts";
 
 class FakeNativeProcess extends EventEmitter {
   stdin = new PassThrough();

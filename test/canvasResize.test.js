@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resizedCanvasNode } from "../src/features/canvas/canvasResize.ts";
+import { resizedCanvasNode } from "../apps/desktop/src/features/canvas/canvasResize.ts";
 
 const node = {
   id: "node_test",

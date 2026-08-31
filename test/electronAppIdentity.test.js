@@ -5,7 +5,7 @@ import {
   castleAppBundleId,
   castleApplicationName,
   resolveCastleRuntimeIconPath,
-} from "../electron/app_identity.ts";
+} from "../apps/desktop/electron/app_identity.ts";
 
 test("uses Castle as the desktop application identity", () => {
   assert.equal(castleApplicationName, "Castle");
@@ -16,7 +16,13 @@ test("resolves development and packaged Castle icons", () => {
   assert.equal(
     resolveCastleRuntimeIconPath({
       isPackaged: false,
-      mainBundleDirectory: path.join("/workspace", ".vite", "build"),
+      mainBundleDirectory: path.join(
+        "/workspace",
+        "apps",
+        "desktop",
+        ".vite",
+        "build",
+      ),
       resourcesPath: path.join("/Applications", "Castle.app", "Contents", "Resources"),
     }),
     path.join("/workspace", "resources", "app-icons", "castle.png"),

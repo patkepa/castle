@@ -8,7 +8,7 @@ export default defineConfig({
   base: base === "/" ? "/" : `${base}/`,
   integrations: [react()],
   output: "static",
-  publicDir: ".castle/public",
+  publicDir: "public",
   trailingSlash: "always",
   build: {
     assets: "app-assets",

@@ -4,7 +4,7 @@ import {
   classifyRelationshipLocation,
   createRelationshipMapLocations,
   createRelationshipMapSources,
-} from "../src/features/relationships/relationshipMap.ts";
+} from "../apps/desktop/src/features/relationships/relationshipMap.ts";
 
 test("groups people sharing location text and omits unknown locations", () => {
   const sources = createRelationshipMapSources([

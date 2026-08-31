@@ -6,7 +6,7 @@ import {
   canvasZoomTransform,
   createCanvasPinchGesture,
   normalizedWheelDelta,
-} from "../src/features/canvas/canvasViewport.ts";
+} from "../apps/desktop/src/features/canvas/canvasViewport.ts";
 
 test("pinch zoom keeps the touched canvas point anchored", () => {
   const gesture = createCanvasPinchGesture(

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CastleChatOrchestrator } from "../electron/ai/chat_orchestrator.ts";
+import { CastleChatOrchestrator } from "../apps/desktop/electron/ai/chat_orchestrator.ts";
 import { FakeStreamingChatProvider } from "./support/fake_chat_provider.ts";
 
 test("prioritizes explicitly attached notes before bounded search context", async () => {

@@ -9,8 +9,8 @@ import {
   rankFolders,
   rankNotes,
   rankPages,
-} from "../src/lib/noteSearch.ts";
-import { APP_SEARCH_PAGES } from "../src/lib/appSearchPages.ts";
+} from "../apps/desktop/src/lib/noteSearch.ts";
+import { APP_SEARCH_PAGES } from "../apps/desktop/src/lib/appSearchPages.ts";
 
 test("normalizes and ranks exact titles ahead of other matches", () => {
   const notes = [

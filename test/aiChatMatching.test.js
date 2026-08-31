@@ -6,7 +6,7 @@ import {
   formatNoteLocation,
   getCommandQuery,
   getMentionQuery,
-} from "../src/components/ai-chat/aiChatMatching.ts";
+} from "../apps/desktop/src/components/ai-chat/aiChatMatching.ts";
 
 const notes = [
   note("health", "Health goals", "personal/health/goals.md", "Personal"),

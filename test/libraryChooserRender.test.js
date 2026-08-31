@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { LibraryChooser } from "../src/components/LibraryChooser.tsx";
-import { DesktopLibrarySettings } from "../src/components/ViewSettingsMenu.tsx";
+import { LibraryChooser } from "../apps/desktop/src/components/LibraryChooser.tsx";
+import { DesktopLibrarySettings } from "../apps/desktop/src/components/ViewSettingsMenu.tsx";
 
 const bridge = {
   chooseLibrary: async () => ({ status: "cancelled" }),

@@ -8,7 +8,7 @@ import {
   getIsoWeek,
   parseLocalDateKey,
   startOfWeek,
-} from "../src/lib/calendarDate.ts";
+} from "../apps/desktop/src/lib/calendarDate.ts";
 
 test("parses and formats strict local calendar dates", () => {
   assert.equal(formatLocalDateKey(new Date(2026, 6, 31)), "2026-07-31");

@@ -3,12 +3,12 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { NoteMarkdown } from "../src/components/NoteMarkdown.tsx";
+import { NoteMarkdown } from "../apps/desktop/src/components/NoteMarkdown.tsx";
 import {
   NOTE_LINK_PREVIEW_HOVER_DELAY_MS,
   NoteLinkPreview,
-} from "../src/components/MarkdownRenderer.tsx";
-import { NoteSidebar } from "../src/components/note-sidebar/NoteSidebar.tsx";
+} from "../apps/desktop/src/components/MarkdownRenderer.tsx";
+import { NoteSidebar } from "../apps/desktop/src/components/note-sidebar/NoteSidebar.tsx";
 
 function note(overrides) {
   return {

@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   resolveAssetPath,
   resolveNoteLink,
-} from "../src/components/NoteMarkdown.tsx";
+} from "../apps/desktop/src/components/NoteMarkdown.tsx";
 
 const note = {
   sourceFile: "notes/folder/source.md",

@@ -14,7 +14,7 @@ import {
   taskTagsWithPublicTags,
   tasksForScope,
   tasksForWorkspace,
-} from "../src/features/tasks/taskPresentation.ts";
+} from "../apps/desktop/src/features/tasks/taskPresentation.ts";
 
 const now = new Date("2026-08-01T12:00:00+02:00");
 

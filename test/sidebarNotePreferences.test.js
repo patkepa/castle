@@ -5,7 +5,7 @@ import {
   parsePinnedNoteIds,
   parseSidebarNoteView,
   reorderPinnedNoteIds,
-} from "../src/lib/sidebarNotePreferences.ts";
+} from "../apps/desktop/src/lib/sidebarNotePreferences.ts";
 
 test("loads only recognized sidebar note views", () => {
   assert.equal(parseSidebarNoteView("pinned"), "pinned");

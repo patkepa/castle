@@ -42,9 +42,10 @@ desktop navigation cannot drift.
 ## Web build
 
 The root `generate:content:web` script runs `castle-web-build` with
-`apps/web/.castle/public` as its output. Astro uses that ignored directory as
-its `publicDir` and reads its catalog during prerendering. Each Castle note gets
-a real static `/note/.../index.html` route.
+`apps/web/public` as its output. Astro uses the ignored generated subdirectories
+alongside its tracked deployment metadata as `publicDir` and reads its catalog
+during prerendering. Each Castle note gets a real static
+`/note/.../index.html` route.
 
 The snapshot is a build dependency, not a runtime service:
 
@@ -57,14 +58,15 @@ Astro application, provided it supplies the same content contract.
 
 ## Migration plan
 
-The current root React renderer and `electron/` directory remain operational
-during the migration. The next extractions should be made only when their first
-consumers are ready:
+`apps/desktop` owns the React renderer, Electron main/preload processes, and its
+Vite and Forge configuration. Root scripts orchestrate both apps and the Rust
+workspace without acting as another application target.
 
-1. Move Electron and its renderer into `apps/desktop`.
-2. Remove direct desktop-bridge access from shared UI code.
-3. Add an explicit public snapshot profile with field and asset allowlists
+The next extractions should be made only when their first consumers are ready:
+
+1. Remove direct desktop-bridge access from shared UI code.
+2. Add an explicit public snapshot profile with field and asset allowlists
    before publishing non-synthetic libraries.
 
-Architecture checks enforce that `apps/web` cannot reach into the legacy
-desktop renderer or Electron process code.
+Architecture checks enforce that `apps/web` cannot reach into the desktop
+renderer or Electron process code.

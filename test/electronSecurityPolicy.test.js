@@ -12,7 +12,7 @@ import {
   packagedAssetCacheControl,
   resolveCastleAssetPath,
   resolvePackagedFilePath,
-} from "../electron/security_policy.ts";
+} from "../apps/desktop/electron/security_policy.ts";
 
 test("allows only the Castle renderer and the exact development origin", () => {
   assert.equal(isTrustedRendererUrl("castle://app/note/example"), true);

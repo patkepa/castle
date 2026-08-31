@@ -3,7 +3,8 @@
 A local-first Markdown knowledge system with two application targets:
 
 - `apps/web`: a read-only Astro site generated from an immutable Castle snapshot.
-- the Electron desktop application: the full local authoring, indexing, and file-management experience.
+- `apps/desktop`: the Electron application for full local authoring, indexing,
+  and file management.
 
 Both targets use the Rust content engine as the canonical parser and validator.
 The deployed Astro site is static HTML, CSS, JavaScript, and assets; Rust is only
@@ -23,8 +24,8 @@ npm run dev
 ```
 
 `npm run dev` generates a web snapshot and starts Astro. Use
-`npm run dev:desktop` for Electron or `npm run dev:viewer` for the legacy React
-viewer while the monorepo migration is in progress.
+`npm run dev:desktop` for Electron or `npm run dev:viewer` for a browser preview
+of the desktop renderer.
 
 Production builds follow the same two-stage pipeline:
 
@@ -33,7 +34,7 @@ npm run generate:content:web
 npm run build --workspace @castle/web
 ```
 
-The first command writes ignored build input under `apps/web/.castle/public`.
+The first command writes ignored build input under `apps/web/public`.
 Astro consumes that snapshot and writes the deployable site to
 `apps/web/dist`.
 

@@ -5,7 +5,7 @@ import {
   recordSearchShadowComparison,
   resetSearchShadowDiagnostics,
   summarizeSearchShadowDiagnostics,
-} from "../src/lib/searchShadowDiagnostics.ts";
+} from "../apps/desktop/src/lib/searchShadowDiagnostics.ts";
 
 test("records aggregate shadow-search quality without retaining result IDs", () => {
   resetSearchShadowDiagnostics();

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   reorderProjectIds,
-} from "../src/features/tasks/TasksPage.tsx";
-import { createProjectSeed } from "../src/lib/projectCreation.ts";
+} from "../apps/desktop/src/features/tasks/TasksPage.tsx";
+import { createProjectSeed } from "../apps/desktop/src/lib/projectCreation.ts";
 
 test("creates a snake_case project record in the project root convention", () => {
   const project = createProjectSeed("Mój Nowy Projekt", []);

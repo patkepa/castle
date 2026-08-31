@@ -19,11 +19,11 @@ import {
   parseManagedCanvasWriteInput,
   parseCanvasMediaImportInput,
   parseCanvasMediaPathInput,
-} from "../electron/ipc_contract.ts";
+} from "../apps/desktop/electron/ipc_contract.ts";
 import {
   parseCastleContentDelta,
   parseCastleSourceChange,
-} from "../src/platform/desktop_bridge.ts";
+} from "../apps/desktop/src/platform/desktop_bridge.ts";
 
 test("accepts only a bounded library path request", () => {
   assert.deepEqual(parseOpenLibraryInput({ path: "/vault/library" }), {

@@ -3,30 +3,30 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { ProjectsPage } from "../src/features/projects/ProjectsPage.tsx";
-import { LibraryBrowser } from "../src/components/library_browser.tsx";
-import { StashList } from "../src/components/StashList.tsx";
-import { orderProjects, TasksPage } from "../src/features/tasks/TasksPage.tsx";
-import { TaskBrowser } from "../src/features/tasks/TaskBrowser.tsx";
-import { TaskKanban } from "../src/features/tasks/TaskKanban.tsx";
-import { TaskInspector } from "../src/features/tasks/TaskInspector.tsx";
-import { CalendarTimeGrid } from "../src/features/calendar/CalendarTimeGrid.tsx";
-import { CalendarPage } from "../src/features/calendar/CalendarPage.tsx";
-import { CalendarEventEditor } from "../src/features/calendar/CalendarEventEditor.tsx";
-import { emptyCalendarEventFormValues } from "../src/features/calendar/calendarEventMarkdown.ts";
-import { TaskViewToggle } from "../src/features/tasks/TaskViewToggle.tsx";
-import { ChecklistsTool } from "../src/components/tools/ChecklistsTool.tsx";
-import { KnowledgeInsightsTool } from "../src/components/tools/KnowledgeInsightsTool.tsx";
-import { CastlePlatformProvider } from "../src/platform/castle_platform_provider.tsx";
-import { webCastlePlatform } from "../src/platform/web_castle_platform.ts";
-import { CastleContextMenuProvider } from "../src/features/context_menu/CastleContextMenu.tsx";
-import { CanvasEditor } from "../src/features/canvas/CanvasEditor.tsx";
-import { CanvasPage } from "../src/features/canvas/CanvasPage.tsx";
+import { ProjectsPage } from "../apps/desktop/src/features/projects/ProjectsPage.tsx";
+import { LibraryBrowser } from "../apps/desktop/src/components/library_browser.tsx";
+import { StashList } from "../apps/desktop/src/components/StashList.tsx";
+import { orderProjects, TasksPage } from "../apps/desktop/src/features/tasks/TasksPage.tsx";
+import { TaskBrowser } from "../apps/desktop/src/features/tasks/TaskBrowser.tsx";
+import { TaskKanban } from "../apps/desktop/src/features/tasks/TaskKanban.tsx";
+import { TaskInspector } from "../apps/desktop/src/features/tasks/TaskInspector.tsx";
+import { CalendarTimeGrid } from "../apps/desktop/src/features/calendar/CalendarTimeGrid.tsx";
+import { CalendarPage } from "../apps/desktop/src/features/calendar/CalendarPage.tsx";
+import { CalendarEventEditor } from "../apps/desktop/src/features/calendar/CalendarEventEditor.tsx";
+import { emptyCalendarEventFormValues } from "../apps/desktop/src/features/calendar/calendarEventMarkdown.ts";
+import { TaskViewToggle } from "../apps/desktop/src/features/tasks/TaskViewToggle.tsx";
+import { ChecklistsTool } from "../apps/desktop/src/components/tools/ChecklistsTool.tsx";
+import { KnowledgeInsightsTool } from "../apps/desktop/src/components/tools/KnowledgeInsightsTool.tsx";
+import { CastlePlatformProvider } from "../apps/desktop/src/platform/castle_platform_provider.tsx";
+import { webCastlePlatform } from "../apps/desktop/src/platform/web_castle_platform.ts";
+import { CastleContextMenuProvider } from "../apps/desktop/src/features/context_menu/CastleContextMenu.tsx";
+import { CanvasEditor } from "../apps/desktop/src/features/canvas/CanvasEditor.tsx";
+import { CanvasPage } from "../apps/desktop/src/features/canvas/CanvasPage.tsx";
 import {
   SheetsPage,
   SheetsManager,
   SpreadsheetPanel,
-} from "../src/features/sheets/SheetsPage.tsx";
+} from "../apps/desktop/src/features/sheets/SheetsPage.tsx";
 
 const projectReference = {
   id: "project_castle",

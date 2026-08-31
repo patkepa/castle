@@ -9,10 +9,10 @@ const iconPathsRoot = path.join(
 );
 const outputPath = path.join(
   castleRoot,
-  "src/generated/blueprint_icon_paths.ts",
+  "apps/desktop/src/generated/blueprint_icon_paths.ts",
 );
 const scanRoots = [
-  path.join(castleRoot, "src"),
+  path.join(castleRoot, "apps/desktop/src"),
   path.join(castleRoot, "node_modules/@patkepa/kantzen-ui"),
 ];
 const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".ts", ".tsx"]);
@@ -48,7 +48,7 @@ for (const root of scanRoots) {
 
 try {
   const catalog = JSON.parse(
-    await readFile(path.join(castleRoot, "public/generated/catalog.json"), "utf8"),
+    await readFile(path.join(castleRoot, "apps/desktop/public/generated/catalog.json"), "utf8"),
   );
   for (const section of catalog.sections ?? []) {
     if (availableIcons.has(section.icon)) usedIcons.add(section.icon);

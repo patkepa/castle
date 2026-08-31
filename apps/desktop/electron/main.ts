@@ -919,6 +919,7 @@ void app.whenReady().then(async () => {
   try {
     const binaryPath = resolveCastleNativeBinary({
       appRoot: app.getAppPath(),
+      repositoryRoot: path.resolve(app.getAppPath(), "../.."),
       isPackaged: app.isPackaged,
       resourcesPath: process.resourcesPath,
       platform: process.platform,

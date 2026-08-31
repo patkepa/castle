@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getRelationshipEdgeStyle } from "../src/features/relationships/relationshipGraphPresentation.ts";
+import { getRelationshipEdgeStyle } from "../apps/desktop/src/features/relationships/relationshipGraphPresentation.ts";
 
 const idleEdgeState = {
   focused: false,

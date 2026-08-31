@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readCastleConfiguration } from "../scripts/read-configuration.mjs";
+import { readCastleConfiguration } from "../../../scripts/read-configuration.mjs";
 
 const configuration = readCastleConfiguration();
 
@@ -20,7 +20,7 @@ export function resolveCastleRuntimeIconPath({
     ? path.join(resourcesPath, castleIconFileName)
     : path.resolve(
         mainBundleDirectory,
-        "../../resources/app-icons",
+        "../../../../resources/app-icons",
         castleIconFileName,
       );
 }

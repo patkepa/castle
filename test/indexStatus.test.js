@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseCastleIndexStatus } from "../src/platform/knowledge_queries.ts";
+import { parseCastleIndexStatus } from "../apps/desktop/src/platform/knowledge_queries.ts";
 
 const provider = {
   provider: "fastembed_local",

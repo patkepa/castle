@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createCastleWindowChrome } from "../electron/window_chrome.ts";
+import { createCastleWindowChrome } from "../apps/desktop/electron/window_chrome.ts";
 
 test("places macOS traffic lights in Castle's thin title strip", () => {
   assert.deepEqual(createCastleWindowChrome("darwin"), {

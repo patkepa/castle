@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { latestModifiedAt } from "../src/lib/noteCatalog.ts";
+import { latestModifiedAt } from "../apps/desktop/src/lib/noteCatalog.ts";
 
 test("finds the latest note timestamp without mutating the catalog", () => {
   const notes = [

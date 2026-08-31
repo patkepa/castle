@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   markdownBodyFromSource,
   NoteEditingSurface,
-} from "../src/components/note_source_editor.tsx";
+} from "../apps/desktop/src/components/note_source_editor.tsx";
 import { markdownHeadings } from "@castle/content";
 
 test("markdownBodyFromSource removes YAML frontmatter without changing the body", () => {

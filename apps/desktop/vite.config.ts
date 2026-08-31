@@ -6,13 +6,14 @@ import {
   parseVideoPosterInput,
   resolveVideoPosterWithFetcher,
 } from "./src/lib/videoPosterServer";
-import { readCastleConfiguration } from "./scripts/read-configuration.mjs";
+import { readCastleConfiguration } from "../../scripts/read-configuration.mjs";
 
-const viewerRoot = import.meta.dirname;
-const configuration = readCastleConfiguration({ castleRoot: viewerRoot });
+const desktopRoot = import.meta.dirname;
+const repositoryRoot = path.resolve(desktopRoot, "../..");
+const configuration = readCastleConfiguration({ castleRoot: repositoryRoot });
 const libraryRoot = configuration.libraryPath;
 const nativeGeneratorPath = path.join(
-  viewerRoot,
+  repositoryRoot,
   "native",
   "target",
   "release",
@@ -21,6 +22,7 @@ const nativeGeneratorPath = path.join(
 
 export default defineConfig({
   base: process.env.CASTLE_BASE_PATH ?? "/",
+  root: desktopRoot,
   plugins: [react(), videoPosterMetadata(), reloadGeneratedContent()],
   resolve: {
     dedupe: ["react", "react-dom", "react-router-dom"],
@@ -97,8 +99,8 @@ function reloadGeneratedContent(): Plugin {
         generating = true;
         execFile(
           nativeGeneratorPath,
-          ["build"],
-          { cwd: viewerRoot },
+          ["build", "--public", path.join(desktopRoot, "public")],
+          { cwd: repositoryRoot },
           (error, stdout, stderr) => {
             generating = false;
 

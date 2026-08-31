@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../apps/desktop/src/styles.css", import.meta.url), "utf8");
 
 test("compact sidebar menus fit inside the icon rail", () => {
   assert.match(

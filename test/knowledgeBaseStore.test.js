@@ -4,7 +4,7 @@ import {
   materializeKnowledgeBase,
   normalizeKnowledgeBase,
   reduceKnowledgeBase,
-} from "../src/app/knowledge_base_store.tsx";
+} from "../apps/desktop/src/app/knowledge_base_store.tsx";
 
 test("keeps normalized entity order authoritative across deltas", () => {
   const initial = emptyKnowledgeBase("2026-08-03T10:00:00.000Z");

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateKnowledgeBase } from "../src/lib/generatedData.ts";
-import { fetchKnowledgeBase } from "../src/lib/knowledgeBase.ts";
+import { validateKnowledgeBase } from "../apps/desktop/src/lib/generatedData.ts";
+import { fetchKnowledgeBase } from "../apps/desktop/src/lib/knowledgeBase.ts";
 
 test("loads the generated knowledge-base catalog", async () => {
   const catalog = emptyCatalog();

@@ -4,8 +4,8 @@ import {
   getVisibleNavigationTabs,
   navigationTabs,
   parseHiddenNavigationTabs,
-} from "../src/lib/navigationPreferences.ts";
-import { defaultCastleUserPreferences } from "../src/platform/user_preferences.ts";
+} from "../apps/desktop/src/lib/navigationPreferences.ts";
+import { defaultCastleUserPreferences } from "../apps/desktop/src/platform/user_preferences.ts";
 
 test("shows all available navigation tabs in a new library by default", () => {
   assert.deepEqual(defaultCastleUserPreferences.hiddenNavigationTabs, []);

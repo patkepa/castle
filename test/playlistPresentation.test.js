@@ -3,13 +3,13 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { FolderPage } from "../src/components/FolderPage.tsx";
-import { LibraryViewToggle } from "../src/components/LibraryViewToggle.tsx";
+import { FolderPage } from "../apps/desktop/src/components/FolderPage.tsx";
+import { LibraryViewToggle } from "../apps/desktop/src/components/LibraryViewToggle.tsx";
 import {
   PlaylistPlayer,
   PlaylistVideoGrid,
   PlaylistView,
-} from "../src/features/playlists/PlaylistView.tsx";
+} from "../apps/desktop/src/features/playlists/PlaylistView.tsx";
 import {
   createPlaylistVideos,
   findPlayableVideos,
@@ -17,16 +17,16 @@ import {
   getPlayableVideo,
   getYouTubeVideoId,
   isVideoOnlyPlaylist,
-} from "../src/features/playlists/playlistPresentation.ts";
-import { handlePlaylistQueueKeyDown } from "../src/features/playlists/playlist_keyboard_navigation.ts";
-import { togglePlaylistFullscreen } from "../src/features/playlists/playlist_page_keyboard_navigation.ts";
+} from "../apps/desktop/src/features/playlists/playlistPresentation.ts";
+import { handlePlaylistQueueKeyDown } from "../apps/desktop/src/features/playlists/playlist_keyboard_navigation.ts";
+import { togglePlaylistFullscreen } from "../apps/desktop/src/features/playlists/playlist_page_keyboard_navigation.ts";
 import {
   formatVideoTime,
   playlistProgressRatio,
   playlistResumeTime,
-} from "../src/features/playlists/playlistState.ts";
-import { CastlePlatformProvider } from "../src/platform/castle_platform_provider.tsx";
-import { webCastlePlatform } from "../src/platform/web_castle_platform.ts";
+} from "../apps/desktop/src/features/playlists/playlistState.ts";
+import { CastlePlatformProvider } from "../apps/desktop/src/platform/castle_platform_provider.tsx";
+import { webCastlePlatform } from "../apps/desktop/src/platform/web_castle_platform.ts";
 
 const note = {
   id: "playlists/visual_math/neural_networks",

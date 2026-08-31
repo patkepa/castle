@@ -3,7 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("web deployment blocks framing and restricts active content", async () => {
-  const headers = await readFile(new URL("../public/_headers", import.meta.url), "utf8");
+  const headers = await readFile(
+    new URL("../apps/web/public/_headers", import.meta.url),
+    "utf8",
+  );
 
   assert.match(headers, /^\s*X-Frame-Options: DENY$/m);
   assert.match(headers, /Content-Security-Policy:.*default-src 'self'/);

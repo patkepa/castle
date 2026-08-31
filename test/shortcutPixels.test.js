@@ -7,7 +7,7 @@ import {
   getShortcutSeed,
   groupShortcuts,
   moveShortcutPixelsIntoEmptyCells,
-} from "../src/lib/shortcutPixels.ts";
+} from "../apps/desktop/src/lib/shortcutPixels.ts";
 
 const githubShortcut = {
   category: "Work",

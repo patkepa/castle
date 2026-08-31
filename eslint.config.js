@@ -6,12 +6,14 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
-      ".vite/**",
-      "dist/**",
+      "**/.astro/**",
+      "**/.vite/**",
+      "**/dist/**",
+      "**/out/**",
       "native/target/**",
       "node_modules/**",
-      "public/generated/**",
-      "src/generated/**",
+      "apps/*/public/generated/**",
+      "apps/desktop/src/generated/**",
     ],
   },
   js.configs.recommended,
@@ -35,7 +37,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/components/graph/ForceGraphCanvas.tsx"],
+    files: ["apps/desktop/src/components/graph/ForceGraphCanvas.tsx"],
     rules: {
       "react-hooks/exhaustive-deps": "off",
     },

@@ -4,7 +4,7 @@ import {
   builtInDocumentDefinitionList,
   builtInDocumentDefinitions,
   isBuiltInDocumentRoute,
-} from "../src/lib/builtInDocumentManifest.ts";
+} from "../apps/desktop/src/lib/builtInDocumentManifest.ts";
 
 test("gives built-in documents stable note routes and library override paths", () => {
   assert.deepEqual(

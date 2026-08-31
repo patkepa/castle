@@ -23,8 +23,8 @@ cargo test --manifest-path native/Cargo.toml --workspace
 ```
 
 `build` reads its default library and repository paths from `CONFIGURATION.md`
-and publishes fetchable artifacts below `public/generated/`. Command-line
-`--library` and `--repository` values override configuration. Pass
+and publishes fetchable artifacts below the selected app's `public/generated/`.
+Command-line `--library` and `--repository` values override configuration. Pass
 `--generated <path>` only when a pretty, monolithic
 knowledge-base JSON file is needed for debugging or export. Note resources are
 immutable and named by their SHA-256 content hash. Existing unchanged resources

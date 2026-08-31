@@ -4,7 +4,7 @@ import {
   defaultCastleAiPrivacyPolicy,
   externalContextAllowedByPolicy,
   externalRequestAllowedByPolicy,
-} from "../electron/ai/privacy_policy.ts";
+} from "../apps/desktop/electron/ai/privacy_policy.ts";
 
 const preview = {
   request: {

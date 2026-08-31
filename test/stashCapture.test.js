@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { StashComposer } from "../src/components/StashComposer.tsx";
-import { createStashSourceInput } from "../src/features/stash/stashCapture.ts";
-import { CastlePlatformProvider } from "../src/platform/castle_platform_provider.tsx";
-import { webCastlePlatform } from "../src/platform/web_castle_platform.ts";
+import { StashComposer } from "../apps/desktop/src/components/StashComposer.tsx";
+import { createStashSourceInput } from "../apps/desktop/src/features/stash/stashCapture.ts";
+import { CastlePlatformProvider } from "../apps/desktop/src/platform/castle_platform_provider.tsx";
+import { webCastlePlatform } from "../apps/desktop/src/platform/web_castle_platform.ts";
 
 test("creates a human-readable, collision-safe stash source input", () => {
   const createdAt = new Date(2026, 7, 3, 14, 5, 9, 27);

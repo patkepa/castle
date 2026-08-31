@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   readLastOpenedCanvasPath,
   writeLastOpenedCanvasPath,
-} from "../src/features/canvas/canvasPreferences.ts";
+} from "../apps/desktop/src/features/canvas/canvasPreferences.ts";
 
 test("remembers the last opened managed canvas", () => {
   const values = new Map();

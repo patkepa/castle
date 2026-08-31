@@ -6,7 +6,7 @@ import {
   destinationSourceFileForEvent,
   emptyCalendarEventFormValues,
   validateCalendarEventForm,
-} from "../src/features/calendar/calendarEventMarkdown.ts";
+} from "../apps/desktop/src/features/calendar/calendarEventMarkdown.ts";
 
 test("creates canonical calendar event records with resolved Castle links", () => {
   const values = {

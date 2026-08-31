@@ -7,7 +7,7 @@ import {
   readUserPreferences,
   userPreferencesPath,
   writeUserPreferences,
-} from "../electron/user_preferences.ts";
+} from "../apps/desktop/electron/user_preferences.ts";
 
 const preferences = {
   schemaVersion: 1,

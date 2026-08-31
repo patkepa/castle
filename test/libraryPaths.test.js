@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getDirectoryContents, getPinnedFolder } from "../src/lib/libraryPaths.ts";
+import { getDirectoryContents, getPinnedFolder } from "../apps/desktop/src/lib/libraryPaths.ts";
 
 const sections = [{ id: "wiki", label: "Wiki" }];
 const notes = [

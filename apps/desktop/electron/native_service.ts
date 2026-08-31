@@ -463,6 +463,7 @@ export class CastleNativeService {
 
 export function resolveCastleNativeBinary(options: {
   appRoot: string;
+  repositoryRoot?: string;
   isPackaged: boolean;
   resourcesPath: string;
   platform: NodeJS.Platform;
@@ -470,7 +471,13 @@ export function resolveCastleNativeBinary(options: {
   const executableName = options.platform === "win32" ? "castle.exe" : "castle";
   return options.isPackaged
     ? path.join(options.resourcesPath, executableName)
-    : path.join(options.appRoot, "native", "target", "release", executableName);
+    : path.join(
+        options.repositoryRoot ?? options.appRoot,
+        "native",
+        "target",
+        "release",
+        executableName,
+      );
 }
 
 function parseState(value: unknown): CastleNativeState {

@@ -3,12 +3,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const sourceRoot = path.join(repositoryRoot, "src");
+const desktopRoot = path.join(repositoryRoot, "apps", "desktop");
+const sourceRoot = path.join(desktopRoot, "src");
 const featuresRoot = path.join(sourceRoot, "features");
 const webSourceRoot = path.join(repositoryRoot, "apps", "web", "src");
 const appsRoot = path.join(repositoryRoot, "apps");
 const packagesRoot = path.join(repositoryRoot, "packages");
-const electronRoot = path.join(repositoryRoot, "electron");
+const electronRoot = path.join(desktopRoot, "electron");
 const sharedFeatures = new Set(["context_menu", "records"]);
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const violations = [];

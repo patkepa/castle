@@ -8,7 +8,7 @@ import {
   listManagedCanvases,
   readManagedCanvas,
   saveManagedCanvas,
-} from "../electron/canvas_library.ts";
+} from "../apps/desktop/electron/canvas_library.ts";
 
 test("creates, lists, reads, and atomically saves managed canvas files", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "castle-canvas-"));

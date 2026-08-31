@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildRelationshipHierarchy } from "../src/features/relationships/relationshipHierarchy.ts";
+import { buildRelationshipHierarchy } from "../apps/desktop/src/features/relationships/relationshipHierarchy.ts";
 import {
   createRelationshipVisibility,
   filterRelationshipPeople,
-} from "../src/features/relationships/relationshipSelectors.ts";
+} from "../apps/desktop/src/features/relationships/relationshipSelectors.ts";
 import {
   createRelationshipWorkspaceState,
   relationshipWorkspaceReducer,
-} from "../src/features/relationships/relationshipWorkspace.ts";
+} from "../apps/desktop/src/features/relationships/relationshipWorkspace.ts";
 
 const root = node("root:owner", "root", "Library Owner", []);
 const business = node("category:businesses", "category", "Businesses", ["businesses"]);

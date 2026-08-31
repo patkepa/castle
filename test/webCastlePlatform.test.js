@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { webCastlePlatform } from "../src/platform/web_castle_platform.ts";
+import { webCastlePlatform } from "../apps/desktop/src/platform/web_castle_platform.ts";
 import {
   loadDesktopCastlePlatform,
   resolveCastlePlatform,
-} from "../src/platform/runtime_castle_platform.ts";
+} from "../apps/desktop/src/platform/runtime_castle_platform.ts";
 import {
   parseCastleContentServiceStatus,
   parseCastleLibrarySelectionResult,
-} from "../src/platform/desktop_bridge.ts";
+} from "../apps/desktop/src/platform/desktop_bridge.ts";
 
 test("the web Castle platform cannot mutate library content", () => {
   assert.equal(webCastlePlatform.runtime, "web");

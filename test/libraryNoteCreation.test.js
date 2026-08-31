@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   createLibraryNoteSourceInput,
   noteStem,
-} from "../src/features/library/libraryNoteCreation.ts";
+} from "../apps/desktop/src/features/library/libraryNoteCreation.ts";
 
 test("creates a Markdown note in the selected Library folder", () => {
   assert.deepEqual(

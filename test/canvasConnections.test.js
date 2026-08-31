@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { connectionTargetAtPoint } from "../src/features/canvas/canvasConnections.ts";
+import { connectionTargetAtPoint } from "../apps/desktop/src/features/canvas/canvasConnections.ts";
 
 const source = {
   id: "source",

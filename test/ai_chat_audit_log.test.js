@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CastleChatAuditLog } from "../electron/ai/chat_audit_log.ts";
-import { parseCastleChatAuditSnapshot } from "../src/platform/ai_chat.ts";
+import { CastleChatAuditLog } from "../apps/desktop/electron/ai/chat_audit_log.ts";
+import { parseCastleChatAuditSnapshot } from "../apps/desktop/src/platform/ai_chat.ts";
 
 test("keeps bounded aggregate chat audit data without retaining personal context", () => {
   const instants = [

@@ -12,7 +12,7 @@ import {
   listManagedSheets,
   readManagedSheet,
   saveManagedSheet,
-} from "../electron/sheet_library.ts";
+} from "../apps/desktop/electron/sheet_library.ts";
 
 test("lists and reads ODS files from the managed sheets folder", async () => {
   const libraryRoot = mkdtempSync(path.join(os.tmpdir(), "castle-sheets-"));

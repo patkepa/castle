@@ -10,7 +10,7 @@ import {
   createProjectContextMenu,
   createStashContextMenu,
   createTaskContextMenu,
-} from "../src/features/context_menu/context_menu_models.ts";
+} from "../apps/desktop/src/features/context_menu/context_menu_models.ts";
 
 test("note menus combine navigation, copying, and source move operations", () => {
   let edits = 0;

@@ -7,7 +7,7 @@ import {
   invalidateGeneratedResource,
   validateNoteContent,
   validateSearchIndex,
-} from "../src/lib/generatedData.ts";
+} from "../apps/desktop/src/lib/generatedData.ts";
 
 test("validates generated resources before exposing them", async () => {
   await assert.rejects(

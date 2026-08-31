@@ -16,7 +16,7 @@
     "types": ["node", "@electron-forge/plugin-vite/forge-vite-env"]
   },
   "include": [
-    "../../electron/**/*.ts",
-    "../electron/**/*.ts"
+    "../../apps/desktop/electron/**/*.ts",
+    "../../apps/desktop/config/**/*.ts"
   ]
 }

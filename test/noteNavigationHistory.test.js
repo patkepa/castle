@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   addNoteJump,
   getPreviousNoteJumps,
-} from "../src/lib/noteNavigationHistory.ts";
+} from "../apps/desktop/src/lib/noteNavigationHistory.ts";
 
 test("records note jumps without duplicating the current note", () => {
   const history = ["/note/one"];

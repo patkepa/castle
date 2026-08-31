@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readPersonMarkdown } from "../src/features/relationships/personMarkdown.ts";
+import { readPersonMarkdown } from "../apps/desktop/src/features/relationships/personMarkdown.ts";
 
 const legacySource = `---
 type: person

@@ -5,7 +5,7 @@ import {
   getStashPreviewBlocks,
   getYouTubeVideoId,
   groupStashNotes,
-} from "../src/features/stash/stashPresentation.ts";
+} from "../apps/desktop/src/features/stash/stashPresentation.ts";
 
 test("groups Stash files by creation day and orders newest first", () => {
   const morning = note("morning", new Date(2026, 7, 2, 9));

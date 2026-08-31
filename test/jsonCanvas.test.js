@@ -5,7 +5,7 @@ import {
   normalizeCanvasUrl,
   parseJsonCanvas,
   serializeJsonCanvas,
-} from "../src/features/canvas/jsonCanvas.ts";
+} from "../apps/desktop/src/features/canvas/jsonCanvas.ts";
 
 test("parses and serializes every JSON Canvas 1.0 node type", () => {
   const source = JSON.stringify({

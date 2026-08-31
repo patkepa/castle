@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { requiredDomains } from "../src/app/useRouteKnowledgeSnapshot.ts";
+import { requiredDomains } from "../apps/desktop/src/app/useRouteKnowledgeSnapshot.ts";
 
 test("route snapshots request only the domains each workspace consumes", () => {
   assert.deepEqual([...requiredDomains("/", false)], []);

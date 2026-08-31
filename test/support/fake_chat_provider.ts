@@ -1,7 +1,7 @@
 import type {
   ChatProvider,
   ChatProviderRequest,
-} from "../../electron/ai/chat_provider";
+} from "../../apps/desktop/electron/ai/chat_provider";
 
 export class FakeStreamingChatProvider implements ChatProvider {
   readonly metadata = Object.freeze({

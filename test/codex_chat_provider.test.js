@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveCodexExecutable } from "../electron/ai/chat_provider.ts";
+import { resolveCodexExecutable } from "../apps/desktop/electron/ai/chat_provider.ts";
 
 test("uses an explicit Castle Codex executable when it exists", () => {
   assert.equal(

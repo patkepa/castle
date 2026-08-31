@@ -14,17 +14,19 @@ import path from "node:path";
 import {
   castleAppBundleId,
   castleApplicationName,
-} from "../../electron/app_identity";
+} from "../electron/app_identity";
 
+const repositoryRoot = path.resolve(import.meta.dirname, "../../..");
 const nativeExecutableName = process.platform === "win32" ? "castle.exe" : "castle";
 const nativeExecutablePath = path.resolve(
+  repositoryRoot,
   "native",
   "target",
   "release",
   nativeExecutableName,
 );
-const appIconPngPath = path.resolve("resources", "app-icons", "castle.png");
-const appIconIcnsPath = path.resolve("resources", "app-icons", "castle.icns");
+const appIconPngPath = path.resolve(repositoryRoot, "resources", "app-icons", "castle.png");
+const appIconIcnsPath = path.resolve(repositoryRoot, "resources", "app-icons", "castle.icns");
 
 const fuseConfig: FuseV1Config = {
   version: FuseVersion.V1,
@@ -86,19 +88,19 @@ const config: ForgeConfig = {
       build: [
         {
           entry: "electron/main.ts",
-          config: "config/electron/vite.main.config.ts",
+          config: "config/vite.main.config.ts",
           target: "main",
         },
         {
           entry: "electron/preload.ts",
-          config: "config/electron/vite.preload.config.ts",
+          config: "config/vite.preload.config.ts",
           target: "preload",
         },
       ],
       renderer: [
         {
           name: "main_window",
-          config: "config/electron/vite.renderer.config.ts",
+          config: "config/vite.renderer.config.ts",
         },
       ],
     }),

@@ -5,7 +5,7 @@ import {
   settingsShortcutIds,
   shortcutCatalog,
   shortcutDisplayText,
-} from "../src/keyboard/shortcut_catalog.ts";
+} from "../apps/desktop/src/keyboard/shortcut_catalog.ts";
 
 test("matches platform search bindings without swallowing extra modifiers", () => {
   assert.equal(matchesShortcut(keyEvent("k", { metaKey: true }), "search"), true);

@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   taskMoveTargetAt,
   taskSortOrderAt,
-} from "../src/features/tasks/useTaskMutations.ts";
+} from "../apps/desktop/src/features/tasks/useTaskMutations.ts";
 
 test("calculates stable task order when moving down within a status", () => {
   const tasks = [

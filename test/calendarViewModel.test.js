@@ -8,8 +8,8 @@ import {
   getScheduledTasksForDate,
   getScheduledTaskMinuteRange,
   getTimetablePlacement,
-} from "../src/features/calendar/calendarViewModel.ts";
-import { formatLocalDateKey } from "../src/lib/calendarDate.ts";
+} from "../apps/desktop/src/features/calendar/calendarViewModel.ts";
+import { formatLocalDateKey } from "../apps/desktop/src/lib/calendarDate.ts";
 
 test("builds complete Monday-based month grids", () => {
   const days = getMonthGridDays(new Date(2026, 7, 1));

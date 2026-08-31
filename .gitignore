@@ -2,7 +2,13 @@ node_modules/
 dist/
 apps/*/dist/
 .astro/
+apps/desktop/public/assets/
+apps/desktop/public/content-assets/
+apps/desktop/public/generated/
 apps/web/.castle/
+apps/web/public/assets/
+apps/web/public/content-assets/
+apps/web/public/generated/
 .vite/
 .wrangler/
 out/
@@ -12,10 +18,7 @@ out/
 !.env.example
 CONFIGURATION.local.md
 examples/library/.castle/
-public/assets/
-public/content-assets/
-public/generated/
-src/generated/content.json
+apps/desktop/src/generated/content.json
 *.tsbuildinfo
 
 # Rust

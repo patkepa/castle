@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateReadingProgress } from "../src/lib/readingProgress.ts";
+import { calculateReadingProgress } from "../apps/desktop/src/lib/readingProgress.ts";
 
 test("hides reading progress when the note does not overflow", () => {
   assert.equal(

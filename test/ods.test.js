@@ -6,13 +6,13 @@ import {
   parseOdsArrayBuffer,
   createOdsArchive,
   spreadsheetColumnLabel,
-} from "../src/features/sheets/ods.ts";
+} from "../apps/desktop/src/features/sheets/ods.ts";
 import {
   cellFromInput,
   recalculateWorkbook,
   updateWorkbookCell,
   updateWorkbookCells,
-} from "../src/features/sheets/calculations.ts";
+} from "../apps/desktop/src/features/sheets/calculations.ts";
 
 test("formats spreadsheet column labels beyond Z", () => {
   assert.equal(spreadsheetColumnLabel(0), "A");

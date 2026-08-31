@@ -3,11 +3,11 @@ import test from "node:test";
 import {
   extractVideoPosterUrl,
   parseVideoPosterResponse,
-} from "../src/lib/videoPoster.ts";
+} from "../apps/desktop/src/lib/videoPoster.ts";
 import {
   parseVideoPosterInput,
   resolveVideoPosterWithFetcher,
-} from "../src/lib/videoPosterServer.ts";
+} from "../apps/desktop/src/lib/videoPosterServer.ts";
 
 test("extracts a clean poster from provider-neutral page metadata", () => {
   const html = `

@@ -19,7 +19,7 @@ import {
   resolveDesktopDataRoot,
   resolveSelectedLibraryRoot,
   writeDesktopSettings,
-} from "../electron/library_location.ts";
+} from "../apps/desktop/electron/library_location.ts";
 
 test("accepts either a Castle repository or its library directory", () => {
   const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), "castle-library-"));

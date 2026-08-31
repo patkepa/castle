@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   createPersonEditorDraft,
   PersonEditor,
-} from "../src/features/relationships/PersonEditor.tsx";
+} from "../apps/desktop/src/features/relationships/PersonEditor.tsx";
 
 const person = {
   id: "person:person_example",
