@@ -28,10 +28,6 @@ const castleSidebarIconPaths: Readonly<Record<string, IconPaths>> = {
 const castleIconPaths: Readonly<
   Record<string, readonly [IconPathsImporter, IconPathsImporter]>
 > = {
-  "array": [
-    () => import("@blueprintjs/icons/lib/esm/generated/16px/paths/array.js"),
-    () => import("@blueprintjs/icons/lib/esm/generated/20px/paths/array.js"),
-  ],
   "arrow-left": [
     () => import("@blueprintjs/icons/lib/esm/generated/16px/paths/arrow-left.js"),
     () => import("@blueprintjs/icons/lib/esm/generated/20px/paths/arrow-left.js"),

@@ -9,7 +9,7 @@ import type {
   NotesResource,
   ProjectsResource,
   TasksResource,
-} from "../generated/castle_contracts";
+} from "@castle/contracts";
 import type {
   KnowledgeBase,
   NoteContent,
@@ -20,7 +20,7 @@ import type {
   CastleContentDelta,
   CastleEntityDelta,
 } from "../platform/castle_platform";
-import { parseCastleContract } from "../generated/castle_contracts";
+import { parseCastleContract } from "@castle/contracts";
 
 type Validator<T> = (value: unknown) => asserts value is T;
 

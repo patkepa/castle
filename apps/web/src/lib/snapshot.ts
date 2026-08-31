@@ -1,40 +1,19 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  CASTLE_CONTENT_CONTRACT_VERSION,
+  parseCastleContract,
+  type CatalogNote,
+  type KnowledgeBase,
+} from "@castle/contracts";
 
-const supportedContractVersion = 2;
 // Astro bundles this module before prerendering, so import.meta.url no longer
 // points into src/ at route generation time. Workspace scripts run with
 // apps/web as their working directory, which is the stable snapshot anchor.
 const publicRoot = path.resolve(process.cwd(), ".castle/public");
 
-export interface CastleSection {
-  id: string;
-  label: string;
-  icon: string;
-  count: number;
-}
-
-export interface CastleNote {
-  id: string;
-  section: string;
-  sectionLabel: string;
-  sourceFile: string;
-  route: string;
-  title: string;
-  excerpt: string;
-  tags: string[];
-  modifiedAt: string;
-  contentPath: string;
-  wordCount: number;
-  readingMinutes: number;
-}
-
-export interface CastleCatalog {
-  contractVersion: number;
-  generatedAt: string;
-  sections: CastleSection[];
-  notes: CastleNote[];
-}
+export type CastleNote = CatalogNote;
+export type CastleCatalog = KnowledgeBase;
 
 export interface CastleNoteContent {
   id: string;
@@ -45,15 +24,13 @@ export interface CastleNoteContent {
 let catalogRequest: Promise<CastleCatalog> | undefined;
 
 export function loadCatalog() {
-  catalogRequest ??= readJson<CastleCatalog>("generated/catalog.json").then(
-    (catalog) => {
-      if (catalog.contractVersion !== supportedContractVersion) {
+  catalogRequest ??= readJson<unknown>("generated/catalog.json").then(
+    (value) => {
+      const catalog = parseCastleContract("KnowledgeBase", value);
+      if (catalog.contractVersion !== CASTLE_CONTENT_CONTRACT_VERSION) {
         throw new Error(
-          `Castle web supports content contract ${supportedContractVersion}, received ${catalog.contractVersion}.`,
+          `Castle web supports content contract ${CASTLE_CONTENT_CONTRACT_VERSION}, received ${catalog.contractVersion}.`,
         );
-      }
-      if (!Array.isArray(catalog.sections) || !Array.isArray(catalog.notes)) {
-        throw new Error("Castle generated an invalid web catalog.");
       }
       return catalog;
     },

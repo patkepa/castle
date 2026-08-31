@@ -1,7 +1,7 @@
 import type {
   CatalogNote,
   PersonNoteSidebar,
-} from "./generated/castle_contracts";
+} from "@castle/contracts";
 
 export type {
   CalendarEvent,
@@ -22,7 +22,7 @@ export type {
   TaskPerson,
   TaskStatus,
   TaskSubtask,
-} from "./generated/castle_contracts";
+} from "@castle/contracts";
 
 export type Note = CatalogNote;
 export type NoteSidebar = PersonNoteSidebar;

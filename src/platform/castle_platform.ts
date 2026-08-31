@@ -31,7 +31,7 @@ import type {
   SourceDocument,
   TaskMutationResult,
   UpdatePersonInput,
-} from "../generated/castle_contracts";
+} from "@castle/contracts";
 
 export type CastleRuntime = "web" | "desktop";
 

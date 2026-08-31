@@ -49,7 +49,7 @@ import {
   type MutateTaskInput,
   type RestoreTaskInput,
   type UpdatePersonInput,
-} from "../src/generated/castle_contracts";
+} from "@castle/contracts";
 import {
   parseCastleUserPreferences,
   type CastleUserPreferences,

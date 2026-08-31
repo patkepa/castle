@@ -5,7 +5,7 @@ import type {
   NotesResource,
   ProjectsResource,
   TasksResource,
-} from "../generated/castle_contracts";
+} from "@castle/contracts";
 import {
   useGeneratedResource,
   validateCalendarResource,

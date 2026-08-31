@@ -1,4 +1,4 @@
-import type { TaskFields } from "../generated/castle_contracts";
+import type { TaskFields } from "@castle/contracts";
 import type { CreateCastleSourceInput } from "../platform/castle_platform";
 import { noteStem } from "./noteFilenames";
 

@@ -7,7 +7,8 @@ A local-first Markdown knowledge system with two application targets:
 
 Both targets use the Rust content engine as the canonical parser and validator.
 The deployed Astro site is static HTML, CSS, JavaScript, and assets; Rust is only
-needed while producing its build input.
+needed while producing its build input. Generated application DTOs and their
+runtime validators are shared through `@castle/contracts`.
 
 [Explore the live demo](https://patkepa.github.io/castle/)
 

@@ -5,7 +5,7 @@ import test from "node:test";
 import {
   CASTLE_CONTENT_CONTRACT_VERSION,
   CASTLE_RPC_PROTOCOL_VERSION,
-} from "../src/generated/castle_contracts.ts";
+} from "@castle/contracts";
 import {
   CastleNativeError,
   CastleNativeService,

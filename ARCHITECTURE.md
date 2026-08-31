@@ -29,6 +29,11 @@ Rust remains the canonical implementation of Castle Markdown semantics. Astro
 renders the normalized snapshot and must not independently compile the source
 library.
 
+Generated transport and domain DTOs live in `packages/contracts`. Rust exports
+the JSON schema into that package, the TypeScript generator builds its runtime
+validator, and both application targets import `@castle/contracts` instead of
+reaching into another application's source tree.
+
 ## Web build
 
 The root `generate:content:web` script runs `castle-web-build` with
@@ -51,12 +56,11 @@ The current root React renderer and `electron/` directory remain operational
 during the migration. The next extractions should be made only when their first
 consumers are ready:
 
-1. Move generated TypeScript DTOs into `packages/contracts`.
-2. Move runtime-neutral Markdown rendering and route helpers into shared
+1. Move runtime-neutral Markdown rendering and route helpers into shared
    packages.
-3. Move Electron and its renderer into `apps/desktop`.
-4. Remove direct desktop-bridge access from shared UI code.
-5. Add an explicit public snapshot profile with field and asset allowlists
+2. Move Electron and its renderer into `apps/desktop`.
+3. Remove direct desktop-bridge access from shared UI code.
+4. Add an explicit public snapshot profile with field and asset allowlists
    before publishing non-synthetic libraries.
 
 Architecture checks enforce that `apps/web` cannot reach into the legacy

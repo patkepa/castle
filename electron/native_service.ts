@@ -6,7 +6,7 @@ import {
   CASTLE_RPC_PROTOCOL_VERSION,
   parseCastleContract,
   type ServiceState,
-} from "../src/generated/castle_contracts";
+} from "@castle/contracts";
 import {
   parseCastleContentDelta,
   parseCastleSourceChange,

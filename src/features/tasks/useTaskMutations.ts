@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { TaskCommand, TaskFields } from "../../generated/castle_contracts";
+import type { TaskCommand, TaskFields } from "@castle/contracts";
 import { formatLocalDateKey } from "../../lib/calendarDate";
 import { useCastlePlatform } from "../../platform/castle_platform_provider";
 import type { Note, Project, Task, TaskStatus } from "../../types";

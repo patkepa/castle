@@ -22,7 +22,7 @@ import {
   type SourceDocument,
   type TaskMutationResult,
   type UpdatePersonInput,
-} from "../src/generated/castle_contracts";
+} from "@castle/contracts";
 import {
   parseCastleIndexStatus,
   parseCastleKnowledgeOverview,

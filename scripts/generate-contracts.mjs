@@ -3,8 +3,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const schemaPath = path.join(projectRoot, "src/generated/castle_contract_schema.json");
-const outputPath = path.join(projectRoot, "src/generated/castle_contracts.ts");
+const schemaPath = path.join(
+  projectRoot,
+  "packages/contracts/src/castle_contract_schema.json",
+);
+const outputPath = path.join(projectRoot, "packages/contracts/src/castle_contracts.ts");
 const schema = JSON.parse(await readFile(schemaPath, "utf8"));
 const definitions = schema.$defs ?? {};
 const definitionEntries = Object.entries(definitions).sort(([left], [right]) =>

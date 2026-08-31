@@ -1,7 +1,7 @@
 node_modules/
 dist/
 apps/*/dist/
-apps/web/.astro/
+.astro/
 apps/web/.castle/
 .vite/
 .wrangler/

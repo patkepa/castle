@@ -713,7 +713,7 @@ mod tests {
     #[test]
     fn checked_in_schema_matches_rust_contracts() {
         let checked_in: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../src/generated/castle_contract_schema.json"
+            "../../../packages/contracts/src/castle_contract_schema.json"
         ))
         .expect("checked-in contract schema");
         assert_eq!(

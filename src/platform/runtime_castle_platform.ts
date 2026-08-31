@@ -23,7 +23,7 @@ import type {
   MutateTaskInput,
   RestoreTaskInput,
   UpdatePersonInput,
-} from "../generated/castle_contracts";
+} from "@castle/contracts";
 
 const unavailableDesktopCapabilities = Object.freeze({
   editContent: false,

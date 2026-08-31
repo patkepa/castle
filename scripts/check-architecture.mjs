@@ -6,6 +6,8 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const sourceRoot = path.join(repositoryRoot, "src");
 const featuresRoot = path.join(sourceRoot, "features");
 const webSourceRoot = path.join(repositoryRoot, "apps", "web", "src");
+const appsRoot = path.join(repositoryRoot, "apps");
+const packagesRoot = path.join(repositoryRoot, "packages");
 const electronRoot = path.join(repositoryRoot, "electron");
 const sharedFeatures = new Set(["context_menu", "records"]);
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
@@ -61,6 +63,27 @@ for (const filePath of sourceFiles(webSourceRoot)) {
     if (isWithin(targetPath, electronRoot) || isWithin(targetPath, sourceRoot)) {
       violations.push(
         `${relativePath}: the static web app must depend on snapshot contracts or shared packages (${importPath})`,
+      );
+    }
+  }
+}
+
+for (const filePath of sourceFiles(packagesRoot)) {
+  const relativePath = path.relative(repositoryRoot, filePath).replaceAll(path.sep, "/");
+  for (const importPath of importedPaths(readFileSync(filePath, "utf8"))) {
+    if (importPath === "electron" || importPath.startsWith("electron/")) {
+      violations.push(`${relativePath}: shared packages cannot import Electron`);
+      continue;
+    }
+    if (!importPath.startsWith(".")) continue;
+    const targetPath = path.resolve(path.dirname(filePath), importPath);
+    if (
+      isWithin(targetPath, appsRoot) ||
+      isWithin(targetPath, electronRoot) ||
+      isWithin(targetPath, sourceRoot)
+    ) {
+      violations.push(
+        `${relativePath}: shared packages cannot depend on application source (${importPath})`,
       );
     }
   }

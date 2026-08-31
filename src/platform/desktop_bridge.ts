@@ -39,7 +39,7 @@ import {
   type RestoreTaskInput,
   type TaskMutationResult,
   type UpdatePersonInput,
-} from "../generated/castle_contracts";
+} from "@castle/contracts";
 
 export interface CastleContentServiceStatus {
   state: "starting" | "ready" | "stale" | "unavailable";

@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
-import type { Shortcut } from "../generated/castle_contracts";
+import type { Shortcut } from "@castle/contracts";
 
-export type { Shortcut } from "../generated/castle_contracts";
+export type { Shortcut } from "@castle/contracts";
 
 interface IndexedShortcut {
   shortcut: Shortcut;
