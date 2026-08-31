@@ -26,8 +26,8 @@ without changing application source code.
 
 ## Library
 
-- `library.path` points to the Markdown library Castle should build for the web
-  development and static build workflows.
+- `library.path` points to the Markdown library Castle should compile into the
+  immutable snapshot consumed by Astro and the legacy web development workflow.
 - `library.repository_path` points to the repository containing that library.
   Castle uses it only for repository-aware metadata such as original stash
   creation dates.

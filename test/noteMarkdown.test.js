@@ -22,4 +22,5 @@ test("resolves relative note and asset paths consistently", () => {
     "/content-assets/notes/image.png",
   );
   assert.equal(resolveAssetPath(note, "/assets/avatar.png"), "/assets/avatar.png");
+  assert.equal(resolveAssetPath(note, "assets/avatar.png"), "/assets/avatar.png");
 });

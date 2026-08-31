@@ -1,5 +1,8 @@
 node_modules/
 dist/
+apps/*/dist/
+apps/web/.astro/
+apps/web/.castle/
 .vite/
 .wrangler/
 out/

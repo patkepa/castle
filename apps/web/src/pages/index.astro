@@ -1,0 +1,38 @@
+---
+import CastleLayout from "../layouts/CastleLayout.astro";
+import { loadCatalog, withBase } from "../lib/snapshot";
+
+const catalog = await loadCatalog();
+const base = import.meta.env.BASE_URL;
+---
+
+<CastleLayout catalog={catalog} title="Castle">
+  <div class="library-home">
+    <header>
+      <h1>Library</h1>
+      <p>{catalog.notes.length} documents, published as a read-only Castle website.</p>
+    </header>
+    <div class="section-list">
+      {
+        catalog.sections.map((section) => {
+          const notes = catalog.notes.filter((note) => note.section === section.id);
+          return (
+            <section>
+              <h2>{section.label}</h2>
+              <ol>
+                {notes.map((note) => (
+                  <li>
+                    <a href={withBase(note.route, base)}>
+                      <strong>{note.title}</strong>
+                      <span>{note.excerpt}</span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          );
+        })
+      }
+    </div>
+  </div>
+</CastleLayout>

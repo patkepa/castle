@@ -21,7 +21,7 @@ if (!hasCargo) {
 }
 
 const pathPrefix = path.join(cargoHome, "bin");
-const build = spawnSync("npm", ["run", "build"], {
+const build = spawnSync("npm", ["run", "build:web"], {
   env: {
     ...process.env,
     PATH: `${pathPrefix}${path.delimiter}${process.env.PATH ?? ""}`,

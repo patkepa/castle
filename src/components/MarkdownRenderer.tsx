@@ -261,6 +261,7 @@ export function resolveMarkdownLink(
 
 export function resolveMarkdownAsset(document: Note, src: string) {
   if (!src || src.startsWith("/") || /^(data:|https?:)/i.test(src)) return src;
+  if (src.startsWith("assets/")) return `/${src}`;
 
   const sourceDirectory = document.sourceFile.split("/").slice(0, -1);
   const resolved = normalizePath([...sourceDirectory, src].join("/"));

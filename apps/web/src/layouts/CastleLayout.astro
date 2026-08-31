@@ -1,0 +1,63 @@
+---
+import type { CastleCatalog, CastleNote } from "../lib/snapshot";
+import { withBase } from "../lib/snapshot";
+import "../styles/global.css";
+
+interface Props {
+  catalog: CastleCatalog;
+  currentNote?: CastleNote;
+  description?: string;
+  title: string;
+}
+
+const { catalog, currentNote, description, title } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description ?? "A read-only Castle knowledge library."} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#080a0d" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="site-shell">
+      <aside class="sidebar">
+        <a class="brand" href={withBase("/", base)} aria-label="Castle home">
+          <span class="brand-mark" aria-hidden="true">C</span>
+          <span>Castle</span>
+        </a>
+        <nav aria-label="Library">
+          {
+            catalog.sections.map((section) => (
+              <section class="nav-section">
+                <h2>{section.label}</h2>
+                <ul>
+                  {catalog.notes
+                    .filter((note) => note.section === section.id)
+                    .map((note) => (
+                      <li>
+                        <a
+                          aria-current={currentNote?.id === note.id ? "page" : undefined}
+                          href={withBase(note.route, base)}
+                        >
+                          {note.title}
+                        </a>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            ))
+          }
+        </nav>
+      </aside>
+      <main class="content">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+---
+import CastleLayout from "../layouts/CastleLayout.astro";
+import { loadCatalog, withBase } from "../lib/snapshot";
+
+const catalog = await loadCatalog();
+---
+
+<CastleLayout catalog={catalog} title="Page not found · Castle">
+  <div class="not-found">
+    <h1>Page not found</h1>
+    <p>This document is not part of the published library.</p>
+    <a href={withBase("/", import.meta.env.BASE_URL)}>Return to the library</a>
+  </div>
+</CastleLayout>

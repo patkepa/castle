@@ -1,0 +1,48 @@
+---
+import { MarkdownBody } from "../../components/MarkdownBody";
+import CastleLayout from "../../layouts/CastleLayout.astro";
+import {
+  loadCatalog,
+  loadNoteContent,
+  noteRoutePath,
+  type CastleNote,
+} from "../../lib/snapshot";
+
+export async function getStaticPaths() {
+  const catalog = await loadCatalog();
+  return catalog.notes.map((note) => ({
+    params: { path: noteRoutePath(note) },
+    props: { note },
+  }));
+}
+
+interface Props {
+  note: CastleNote;
+}
+
+const { note } = Astro.props;
+const catalog = await loadCatalog();
+const content = await loadNoteContent(note);
+const base = import.meta.env.BASE_URL;
+---
+
+<CastleLayout
+  catalog={catalog}
+  currentNote={note}
+  description={note.excerpt}
+  title={`${note.title} · Castle`}
+>
+  <article class="note">
+    <header class="note-header">
+      <p>{note.sectionLabel}</p>
+      <h1>{note.title}</h1>
+      <div class="note-meta">
+        <span>{note.wordCount} words</span>
+        <span>{note.readingMinutes} min read</span>
+      </div>
+    </header>
+    <div class="markdown-body">
+      <MarkdownBody base={base} content={content.content} document={note} notes={catalog.notes} />
+    </div>
+  </article>
+</CastleLayout>

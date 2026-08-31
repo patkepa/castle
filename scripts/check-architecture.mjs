@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoot = path.join(repositoryRoot, "src");
 const featuresRoot = path.join(sourceRoot, "features");
+const webSourceRoot = path.join(repositoryRoot, "apps", "web", "src");
+const electronRoot = path.join(repositoryRoot, "electron");
 const sharedFeatures = new Set(["context_menu", "records"]);
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const violations = [];
@@ -35,6 +37,30 @@ for (const filePath of sourceFiles(sourceRoot)) {
     ) {
       violations.push(
         `${relativePath}: feature ${owner} cannot reach into feature ${targetOwner} (${importPath})`,
+      );
+    }
+  }
+}
+
+for (const filePath of sourceFiles(webSourceRoot)) {
+  const relativePath = path.relative(repositoryRoot, filePath).replaceAll(path.sep, "/");
+  const source = readFileSync(filePath, "utf8");
+  const imports = importedPaths(source);
+
+  if (source.includes("window.castleDesktop")) {
+    violations.push(`${relativePath}: the static web app cannot access the desktop bridge`);
+  }
+
+  for (const importPath of imports) {
+    if (importPath === "electron" || importPath.startsWith("electron/")) {
+      violations.push(`${relativePath}: the static web app cannot import Electron`);
+      continue;
+    }
+    if (!importPath.startsWith(".")) continue;
+    const targetPath = path.resolve(path.dirname(filePath), importPath);
+    if (isWithin(targetPath, electronRoot) || isWithin(targetPath, sourceRoot)) {
+      violations.push(
+        `${relativePath}: the static web app must depend on snapshot contracts or shared packages (${importPath})`,
       );
     }
   }
