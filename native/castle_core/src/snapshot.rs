@@ -154,6 +154,10 @@ fn write_desktop_snapshot_contents(
     let generated_root = options.public_root.join("generated");
     let notes_root = generated_root.join("notes");
     fs::create_dir_all(&notes_root)?;
+    let public_policy = generated_root.join("public-profile.json");
+    if public_policy.try_exists()? {
+        fs::remove_file(public_policy)?;
+    }
     let mut desired_notes = HashSet::new();
     for resource in note_resources {
         let relative = resource

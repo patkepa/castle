@@ -43,8 +43,10 @@ desktop navigation cannot drift.
 
 ## Web build
 
-The root `generate:content:web` script runs `castle-web-build` with
-`apps/web/public` as its output. Astro uses the ignored generated subdirectories
+The root snapshot scripts pass an explicit profile to `castle-web-build`:
+`generate:content:web` writes the public projection to `apps/web/public`, while
+`generate:content` writes the full desktop-viewer snapshot to
+`apps/desktop/public`. Astro uses the ignored generated subdirectories
 alongside its tracked deployment metadata as `publicDir` and reads its catalog
 during prerendering. Each Castle note gets a real static
 `/note/.../index.html` route.

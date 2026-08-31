@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const rootPackage = JSON.parse(readFileSync(path.join(repositoryRoot, "package.json"), "utf8"));
 const desktopRoot = path.join(repositoryRoot, "apps", "desktop");
 const sourceRoot = path.join(desktopRoot, "src");
 const featuresRoot = path.join(sourceRoot, "features");
@@ -19,6 +20,18 @@ const rawBridgeConsumers = new Set([
 ]);
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const violations = [];
+
+for (const [scriptName, profile, output] of [
+  ["generate:content", "desktop", "apps/desktop/public"],
+  ["generate:content:web", "public", "apps/web/public"],
+]) {
+  const script = rootPackage.scripts?.[scriptName] ?? "";
+  if (!script.includes(`--profile ${profile}`) || !script.includes(`--public ${output}`)) {
+    violations.push(
+      `package.json: ${scriptName} must explicitly generate the ${profile} snapshot at ${output}`,
+    );
+  }
+}
 
 for (const filePath of sourceFiles(sourceRoot)) {
   const relativePath = path.relative(sourceRoot, filePath).replaceAll(path.sep, "/");

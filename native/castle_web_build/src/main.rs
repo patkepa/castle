@@ -5,12 +5,12 @@ use castle_core::{
     CompileOptions, SnapshotOptions, SnapshotProfile, compile_library, load_castle_configuration,
     write_snapshot,
 };
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(
     name = "castle-web-build",
-    about = "Generate Castle's static web content"
+    about = "Generate a Castle snapshot for an application build"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -33,6 +33,24 @@ struct Paths {
     generated: Option<PathBuf>,
     #[arg(long, default_value = "public")]
     public: PathBuf,
+    /// Select the application boundary this snapshot is allowed to serve.
+    #[arg(long, value_enum)]
+    profile: SnapshotProfileArgument,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum SnapshotProfileArgument {
+    Desktop,
+    Public,
+}
+
+impl From<SnapshotProfileArgument> for SnapshotProfile {
+    fn from(value: SnapshotProfileArgument) -> Self {
+        match value {
+            SnapshotProfileArgument::Desktop => Self::Desktop,
+            SnapshotProfileArgument::Public => Self::Public,
+        }
+    }
 }
 
 fn main() -> Result<()> {
@@ -49,7 +67,7 @@ fn main() -> Result<()> {
         &SnapshotOptions {
             generated_path: paths.generated,
             public_root: paths.public,
-            profile: SnapshotProfile::Public,
+            profile: paths.profile.into(),
         },
     )?;
 
@@ -81,4 +99,26 @@ fn main() -> Result<()> {
         stats.obsidian_replacement_count,
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snapshot_profile_is_required_and_explicit() {
+        assert!(Cli::try_parse_from(["castle-web-build", "build"]).is_err());
+
+        let cli = Cli::try_parse_from([
+            "castle-web-build",
+            "build",
+            "--profile",
+            "public",
+            "--public",
+            "output",
+        ])
+        .unwrap();
+        let Command::Build(paths) = cli.command;
+        assert!(matches!(paths.profile, SnapshotProfileArgument::Public));
+    }
 }
