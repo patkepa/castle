@@ -16,7 +16,7 @@ castle-core (compile, validate, normalize, project)
 ## Application boundaries
 
 `apps/web` is a publication target. It may read only the versioned snapshot
-produced by `castle-web-build`. It must not import Electron, access the desktop
+produced by `castle-snapshot`. It must not import Electron, access the desktop
 preload bridge, or receive a content-mutation implementation. Its deployed
 artifact must not require Rust or Node.js.
 
@@ -41,9 +41,9 @@ in `packages/content`. Both renderers own their presentation components, but
 they resolve Castle content paths through `@castle/content` so static and
 desktop navigation cannot drift.
 
-## Web build
+## Snapshot builds
 
-The root snapshot scripts pass an explicit profile to `castle-web-build`:
+The root snapshot scripts pass an explicit profile to `castle-snapshot`:
 `generate:content:web` writes the public projection to `apps/web/public`, while
 `generate:content` writes the full desktop-viewer snapshot to
 `apps/desktop/public`. Astro uses the ignored generated subdirectories
@@ -51,9 +51,9 @@ alongside its tracked deployment metadata as `publicDir` and reads its catalog
 during prerendering. Each Castle note gets a real static
 `/note/.../index.html` route.
 
-The snapshot is a build dependency, not a runtime service. The web builder
-selects the explicit `Public` profile; desktop and the general-purpose CLI select
-`Desktop`. The public profile projects the catalog and note resources through
+The snapshot is a build dependency, not a runtime service. The Astro build
+selects the explicit `Public` profile; desktop and the general-purpose CLI
+select `Desktop`. The public profile projects the catalog and note resources through
 dedicated deny-unknown-field contracts, copies only referenced raster images
 with allowlisted extensions, and removes richer desktop resources from its
 output root. Its machine-readable policy is emitted as

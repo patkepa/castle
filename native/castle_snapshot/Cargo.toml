@@ -1,6 +1,6 @@
 [package]
-name = "castle-web-build"
-description = "Minimal static-site generator used by the Cloudflare web build"
+name = "castle-snapshot"
+description = "Application snapshot builder for Castle's desktop and static web targets"
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -8,7 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "castle-web-build"
+name = "castle-snapshot"
 path = "src/main.rs"
 
 [dependencies]

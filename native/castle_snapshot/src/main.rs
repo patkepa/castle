@@ -9,7 +9,7 @@ use clap::{Parser, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "castle-web-build",
+    name = "castle-snapshot",
     about = "Generate a Castle snapshot for an application build"
 )]
 struct Cli {
@@ -107,10 +107,10 @@ mod tests {
 
     #[test]
     fn snapshot_profile_is_required_and_explicit() {
-        assert!(Cli::try_parse_from(["castle-web-build", "build"]).is_err());
+        assert!(Cli::try_parse_from(["castle-snapshot", "build"]).is_err());
 
         let cli = Cli::try_parse_from([
-            "castle-web-build",
+            "castle-snapshot",
             "build",
             "--profile",
             "public",

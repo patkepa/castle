@@ -7,6 +7,8 @@ This workspace is the content backend for Castle.
   and implements transactional source mutations.
 - `castle_cli` exposes `build`, `validate`, and the persistent Electron
   `daemon`.
+- `castle_snapshot` emits application build inputs and requires an explicit
+  `desktop` or `public` profile.
 
 The static and desktop targets deliberately use the same compiler. Markdown in
 `library/` remains the source of truth; no database or daemon-owned source state
@@ -19,11 +21,14 @@ Run these from `castle/`:
 ```sh
 cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- build
 cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- validate
+cargo run --release --manifest-path native/Cargo.toml -p castle-snapshot -- build --profile public --public apps/web/public
 cargo test --manifest-path native/Cargo.toml --workspace
 ```
 
-`build` reads its default library and repository paths from `CONFIGURATION.md`
-and publishes fetchable artifacts below the selected app's `public/generated/`.
+The commands read their default library and repository paths from
+`CONFIGURATION.md` and publish fetchable artifacts below the selected app's
+`public/generated/`. `castle-cli build` writes a full desktop snapshot;
+application build scripts should use `castle-snapshot` and name their profile.
 Command-line `--library` and `--repository` values override configuration. Pass
 `--generated <path>` only when a pretty, monolithic
 knowledge-base JSON file is needed for debugging or export. Note resources are

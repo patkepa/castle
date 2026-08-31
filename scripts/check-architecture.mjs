@@ -26,7 +26,11 @@ for (const [scriptName, profile, output] of [
   ["generate:content:web", "public", "apps/web/public"],
 ]) {
   const script = rootPackage.scripts?.[scriptName] ?? "";
-  if (!script.includes(`--profile ${profile}`) || !script.includes(`--public ${output}`)) {
+  if (
+    !script.includes("-p castle-snapshot") ||
+    !script.includes(`--profile ${profile}`) ||
+    !script.includes(`--public ${output}`)
+  ) {
     violations.push(
       `package.json: ${scriptName} must explicitly generate the ${profile} snapshot at ${output}`,
     );
