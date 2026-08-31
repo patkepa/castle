@@ -3,6 +3,10 @@ import {
   Popover,
   PopoverInteractionKind,
 } from "@patkepa/kantzen-ui/primitives";
+import {
+  resolveMarkdownAsset,
+  resolveMarkdownLink,
+} from "@castle/content";
 import { useMemo, type ComponentProps, type ReactNode } from "react";
 import { slug } from "github-slugger";
 import ReactMarkdown, { type Components } from "react-markdown";
@@ -234,50 +238,6 @@ export function NoteLinkPreview({ id, note }: { id: string; note: Note }) {
 export function linkOccurrenceId(node: PositionedMarkdownNode | undefined) {
   const start = node?.position?.start;
   return start ? `link-occurrence-${start.line}-${start.column}` : undefined;
-}
-
-export function resolveMarkdownLink(
-  document: Note,
-  href: string,
-  sourceLookup: ReadonlyMap<string, Note>,
-) {
-  if (
-    !href ||
-    href.startsWith("#") ||
-    href.startsWith("/") ||
-    /^[a-z]+:/i.test(href)
-  ) {
-    return href;
-  }
-
-  const [pathname, hash] = href.split("#");
-  if (!/\.mdx?$/i.test(pathname)) return href;
-
-  const sourceDirectory = document.sourceFile.split("/").slice(0, -1);
-  const resolvedSource = normalizePath([...sourceDirectory, pathname].join("/"));
-  const target = sourceLookup.get(resolvedSource);
-  return target ? `${target.route}${hash ? `#${slug(hash)}` : ""}` : href;
-}
-
-export function resolveMarkdownAsset(document: Note, src: string) {
-  if (!src || src.startsWith("/") || /^(data:|https?:)/i.test(src)) return src;
-  if (src.startsWith("assets/")) return `/${src}`;
-
-  const sourceDirectory = document.sourceFile.split("/").slice(0, -1);
-  const resolved = normalizePath([...sourceDirectory, src].join("/"));
-  return resolved.startsWith("assets/")
-    ? `/${resolved}`
-    : `/content-assets/${resolved}`;
-}
-
-function normalizePath(value: string) {
-  const segments = [];
-  for (const segment of value.split("/")) {
-    if (!segment || segment === ".") continue;
-    if (segment === "..") segments.pop();
-    else segments.push(segment);
-  }
-  return segments.join("/");
 }
 
 function textFromChildren(children: ReactNode): string {

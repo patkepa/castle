@@ -1,5 +1,5 @@
 import type { Note, NoteContent } from "../types";
-import { markdownBodyFromSource, markdownHeadings } from "./markdownSource";
+import { markdownBodyFromSource, markdownHeadings } from "@castle/content";
 import {
   builtInDocumentDefinitions,
   type BuiltInDocumentDefinition,

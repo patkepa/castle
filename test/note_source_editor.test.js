@@ -6,7 +6,7 @@ import {
   markdownBodyFromSource,
   NoteEditingSurface,
 } from "../src/components/note_source_editor.tsx";
-import { markdownHeadings } from "../src/lib/markdownSource.ts";
+import { markdownHeadings } from "@castle/content";
 
 test("markdownBodyFromSource removes YAML frontmatter without changing the body", () => {
   const source = [

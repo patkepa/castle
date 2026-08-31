@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^6.0.4",
+    "@castle/content": "0.1.0",
     "@castle/contracts": "0.1.0",
     "astro": "^7.2.9",
     "github-slugger": "^2.0.0",

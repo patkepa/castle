@@ -32,7 +32,7 @@ import { NoteEditingSurface } from "./note_source_editor";
 import {
   markdownBodyFromSource,
   markdownHeadings,
-} from "../lib/markdownSource";
+} from "@castle/content";
 
 interface NotePageProps {
   events: CalendarEvent[];

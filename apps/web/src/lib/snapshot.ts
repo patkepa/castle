@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+export { noteRoutePath, withBase } from "@castle/content";
 import {
   CASTLE_CONTENT_CONTRACT_VERSION,
   parseCastleContract,
@@ -44,20 +45,6 @@ export function loadNoteContent(note: CastleNote) {
     throw new Error(`Castle note ${note.id} has an invalid content path.`);
   }
   return readJson<CastleNoteContent>(resourcePath);
-}
-
-export function noteRoutePath(note: CastleNote) {
-  const prefix = "/note/";
-  if (!note.route.startsWith(prefix)) {
-    throw new Error(`Castle note ${note.id} has an invalid route.`);
-  }
-  return note.route.slice(prefix.length);
-}
-
-export function withBase(pathname: string, base: string) {
-  if (!pathname.startsWith("/")) return pathname;
-  const normalizedBase = base === "/" ? "" : `/${base.split("/").filter(Boolean).join("/")}`;
-  return `${normalizedBase}${pathname}` || "/";
 }
 
 async function readJson<T>(relativePath: string): Promise<T> {

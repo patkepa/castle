@@ -2,6 +2,7 @@ import type {
   CatalogNote,
   PersonNoteSidebar,
 } from "@castle/contracts";
+import type { MarkdownHeading } from "@castle/content";
 
 export type {
   CalendarEvent,
@@ -27,12 +28,7 @@ export type {
 export type Note = CatalogNote;
 export type NoteSidebar = PersonNoteSidebar;
 
-export interface Heading {
-  depth: number;
-  label: string;
-  id: string;
-  line: number;
-}
+export type Heading = MarkdownHeading;
 
 export interface BacklinkOccurrence {
   anchorId: string;

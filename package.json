@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@blueprintjs/icons": "^6.2.0",
+    "@castle/content": "0.1.0",
     "@castle/contracts": "0.1.0",
     "@patkepa/kantzen-ui": "0.1.0",
     "@videojs/react": "10.0.0-beta.28",

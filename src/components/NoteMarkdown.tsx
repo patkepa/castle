@@ -4,7 +4,7 @@ import { MarkdownRenderer } from "./MarkdownRenderer";
 export {
   resolveMarkdownAsset as resolveAssetPath,
   resolveMarkdownLink as resolveNoteLink,
-} from "./MarkdownRenderer";
+} from "@castle/content";
 
 export function NoteMarkdown({
   content,

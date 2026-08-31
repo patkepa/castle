@@ -34,6 +34,11 @@ the JSON schema into that package, the TypeScript generator builds its runtime
 validator, and both application targets import `@castle/contracts` instead of
 reaching into another application's source tree.
 
+Runtime-neutral Markdown source, link, asset, and deployment-route helpers live
+in `packages/content`. Both renderers own their presentation components, but
+they resolve Castle content paths through `@castle/content` so static and
+desktop navigation cannot drift.
+
 ## Web build
 
 The root `generate:content:web` script runs `castle-web-build` with
@@ -56,11 +61,9 @@ The current root React renderer and `electron/` directory remain operational
 during the migration. The next extractions should be made only when their first
 consumers are ready:
 
-1. Move runtime-neutral Markdown rendering and route helpers into shared
-   packages.
-2. Move Electron and its renderer into `apps/desktop`.
-3. Remove direct desktop-bridge access from shared UI code.
-4. Add an explicit public snapshot profile with field and asset allowlists
+1. Move Electron and its renderer into `apps/desktop`.
+2. Remove direct desktop-bridge access from shared UI code.
+3. Add an explicit public snapshot profile with field and asset allowlists
    before publishing non-synthetic libraries.
 
 Architecture checks enforce that `apps/web` cannot reach into the legacy

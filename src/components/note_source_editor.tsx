@@ -1,7 +1,7 @@
 import { Icon } from "@patkepa/kantzen-ui/primitives";
 import type { Note } from "../types";
 
-export { markdownBodyFromSource } from "../lib/markdownSource";
+export { markdownBodyFromSource } from "@castle/content";
 
 export function NoteEditingSurface({
   draft,

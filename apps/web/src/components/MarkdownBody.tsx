@@ -1,3 +1,4 @@
+import { resolveMarkdownAsset, resolveMarkdownLink } from "@castle/content";
 import { slug } from "github-slugger";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
@@ -66,40 +67,6 @@ function createHeading(Tag: "h1" | "h2" | "h3" | "h4") {
   }: ComponentPropsWithoutRef<typeof Tag> & { node?: unknown }) {
     return <Tag {...props} id={slug(textFromChildren(children))}>{children}</Tag>;
   };
-}
-
-function resolveMarkdownLink(
-  document: CastleNote,
-  href: string,
-  notesBySource: ReadonlyMap<string, CastleNote>,
-) {
-  if (!href || href.startsWith("#") || href.startsWith("/") || /^[a-z]+:/i.test(href)) {
-    return href;
-  }
-  const [pathname, hash] = href.split("#");
-  if (!/\.mdx?$/i.test(pathname)) return href;
-  const directory = document.sourceFile.split("/").slice(0, -1);
-  const sourceFile = normalizePath([...directory, pathname].join("/"));
-  const target = notesBySource.get(sourceFile);
-  return target ? `${target.route}${hash ? `#${slug(hash)}` : ""}` : href;
-}
-
-function resolveMarkdownAsset(document: CastleNote, source: string) {
-  if (!source || source.startsWith("/") || /^(data:|https?:)/i.test(source)) return source;
-  if (source.startsWith("assets/")) return `/${source}`;
-  const directory = document.sourceFile.split("/").slice(0, -1);
-  const resolved = normalizePath([...directory, source].join("/"));
-  return resolved.startsWith("assets/") ? `/${resolved}` : `/content-assets/${resolved}`;
-}
-
-function normalizePath(value: string) {
-  const segments: string[] = [];
-  for (const segment of value.split("/")) {
-    if (!segment || segment === ".") continue;
-    if (segment === "..") segments.pop();
-    else segments.push(segment);
-  }
-  return segments.join("/");
 }
 
 function textFromChildren(children: ReactNode): string {
