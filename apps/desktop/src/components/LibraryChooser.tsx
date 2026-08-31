@@ -1,16 +1,16 @@
 import { Icon } from "@patkepa/kantzen-ui/primitives";
 import { useState } from "react";
 import type {
-  CastleDesktopBridge,
   CastleDesktopLibrary,
+  CastleDesktopServices,
   CastleLibrarySelectionResult,
-} from "../platform/desktop_bridge";
+} from "../platform/castle_platform";
 
 export function LibraryChooser({
-  bridge,
+  desktopServices,
   libraries,
 }: {
-  bridge: CastleDesktopBridge;
+  desktopServices: CastleDesktopServices;
   libraries: CastleDesktopLibrary[];
 }) {
   const [workingPath, setWorkingPath] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function LibraryChooser({
       const result = await pendingSelection;
       if (result.status === "selected") {
         setWorkingPath(result.library.path);
-        await bridge.restartApp();
+        await desktopServices.restartApp();
         return;
       }
       if (result.status === "invalid") setError(result.message);
@@ -38,9 +38,9 @@ export function LibraryChooser({
   };
 
   const openFolder = () =>
-    finishSelection(bridge.chooseLibrary(), "choose-folder");
+    finishSelection(desktopServices.chooseLibrary(), "choose-folder");
   const openRecent = (library: CastleDesktopLibrary) =>
-    finishSelection(bridge.openLibrary(library.path), library.path);
+    finishSelection(desktopServices.openLibrary(library.path), library.path);
 
   return (
     <main className="library-launcher">

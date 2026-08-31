@@ -1,5 +1,6 @@
 import type { CastleKnowledgeQueries } from "./knowledge_queries";
 import type { CastleAiChat } from "./ai_chat";
+import type { CastleUserPreferences } from "./user_preferences";
 import type {
   CalendarEvent,
   LibraryFolder,
@@ -40,6 +41,52 @@ export interface CastleCapabilities {
   createContent: boolean;
   moveContent: boolean;
   deleteContent: boolean;
+}
+
+export interface CastleContentServiceStatus {
+  state: "starting" | "ready" | "stale" | "unavailable";
+  message: string;
+  generatedAt: string;
+}
+
+export interface CastleDesktopLibrary {
+  name: string;
+  path: string;
+  available: boolean;
+  active: boolean;
+}
+
+export type CastleLibrarySelectionResult =
+  | { status: "selected"; library: CastleDesktopLibrary }
+  | { status: "cancelled" }
+  | { status: "invalid"; message: string };
+
+export interface CastleDesktopInfo {
+  runtime: "desktop";
+  operatingSystem: string;
+  library: CastleDesktopLibrary | null;
+  libraries: CastleDesktopLibrary[];
+  capabilities: Readonly<CastleCapabilities>;
+  contentServiceStatus: CastleContentServiceStatus;
+}
+
+export interface CastleManagedSheet {
+  relativePath: string;
+  name: string;
+  size: number;
+  modifiedAt: string;
+}
+
+export interface CastleManagedCanvas {
+  relativePath: string;
+  name: string;
+  size: number;
+  modifiedAt: string;
+}
+
+export interface CastleImportedCanvasMedia {
+  file: string;
+  kind: "image" | "pdf";
 }
 
 export type CastleSourceDocument = SourceDocument;
@@ -116,6 +163,45 @@ export interface CastleMediaPreviews {
   resolveVideoPoster(sourceUrl: string): Promise<string | null>;
 }
 
+/** Desktop-only services exposed to renderer features without leaking the preload bridge. */
+export interface CastleDesktopServices {
+  supportsCanvasWebPreviews: boolean;
+  getInfo(): Promise<CastleDesktopInfo>;
+  onContentServiceStatusChange(
+    listener: (status: CastleContentServiceStatus) => void,
+  ): () => void;
+  onContentDelta(listener: (delta: CastleContentDelta) => void): () => void;
+  loadUserPreferences(): Promise<CastleUserPreferences | null>;
+  saveUserPreferences(
+    preferences: CastleUserPreferences,
+  ): Promise<CastleUserPreferences>;
+  chooseLibrary(): Promise<CastleLibrarySelectionResult>;
+  openLibrary(libraryPath: string): Promise<CastleLibrarySelectionResult>;
+  restartApp(): Promise<void>;
+  listManagedSheets(): Promise<CastleManagedSheet[]>;
+  readManagedSheet(relativePath: string): Promise<ArrayBuffer>;
+  saveManagedSheet(
+    relativePath: string,
+    archive: ArrayBuffer,
+  ): Promise<CastleManagedSheet>;
+  listManagedCanvases(): Promise<CastleManagedCanvas[]>;
+  readManagedCanvas(relativePath: string): Promise<string>;
+  createManagedCanvas(
+    relativePath: string,
+    source: string,
+  ): Promise<CastleManagedCanvas>;
+  saveManagedCanvas(
+    relativePath: string,
+    source: string,
+  ): Promise<CastleManagedCanvas>;
+  importCanvasMedia(input: {
+    name: string;
+    mimeType: string;
+    data: ArrayBuffer;
+  }): Promise<CastleImportedCanvasMedia>;
+  openCanvasMedia(relativePath: string): Promise<void>;
+}
+
 export interface CastlePlatform {
   runtime: CastleRuntime;
   capabilities: Readonly<CastleCapabilities>;
@@ -123,4 +209,5 @@ export interface CastlePlatform {
   mediaPreviews: CastleMediaPreviews;
   knowledgeQueries: CastleKnowledgeQueries | null;
   aiChat: CastleAiChat | null;
+  desktopServices: CastleDesktopServices | null;
 }

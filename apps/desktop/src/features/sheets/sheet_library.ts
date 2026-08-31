@@ -1,4 +1,7 @@
-import type { CastleManagedSheet } from "../../platform/desktop_bridge";
+import type {
+  CastleDesktopServices,
+  CastleManagedSheet,
+} from "../../platform/castle_platform";
 import { fetchGeneratedSheetCatalog } from "./generated_sheet_library";
 
 export interface LibrarySheet extends CastleManagedSheet {
@@ -6,10 +9,11 @@ export interface LibrarySheet extends CastleManagedSheet {
   readOnly: boolean;
 }
 
-export async function loadLibrarySheets(): Promise<LibrarySheet[]> {
-  const bridge = window.castleDesktop;
-  if (bridge) {
-    return (await bridge.listManagedSheets()).map((sheet) => ({
+export async function loadLibrarySheets(
+  desktopServices: CastleDesktopServices | null = null,
+): Promise<LibrarySheet[]> {
+  if (desktopServices) {
+    return (await desktopServices.listManagedSheets()).map((sheet) => ({
       ...sheet,
       readOnly: false,
     }));

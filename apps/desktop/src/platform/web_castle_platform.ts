@@ -23,4 +23,5 @@ export const webCastlePlatform: CastlePlatform = Object.freeze({
   }),
   knowledgeQueries: null,
   aiChat: null,
+  desktopServices: null,
 });

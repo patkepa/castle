@@ -22,6 +22,7 @@ import {
 } from "../../components/LibraryViewToggle";
 import { LibrarySearch, LibraryToolbar } from "../../components/LibraryToolbar";
 import { decodeFolderPath, humanizePathSegment } from "../../lib/libraryPaths";
+import { useCastlePlatform } from "../../platform/castle_platform_provider";
 import {
   parseOdsArrayBuffer,
   parseOdsFile,
@@ -89,8 +90,8 @@ export function SheetsPage({
   initialRelativePath,
   onBack,
 }: SheetsPageProps = {}) {
-  const desktopAvailable =
-    typeof window !== "undefined" && Boolean(window.castleDesktop);
+  const desktopServices = useCastlePlatform().desktopServices;
+  const desktopAvailable = Boolean(desktopServices);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [openedSpreadsheet, setOpenedSpreadsheet] =
     useState<OpenedSpreadsheet | null>(null);
@@ -108,7 +109,7 @@ export function SheetsPage({
     setManagerLoading(true);
     setError("");
     try {
-      setManagedSheets(await loadLibrarySheets());
+      setManagedSheets(await loadLibrarySheets(desktopServices));
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -118,7 +119,7 @@ export function SheetsPage({
     } finally {
       setManagerLoading(false);
     }
-  }, []);
+  }, [desktopServices]);
 
   useEffect(() => {
     void refreshManagedSheets();
@@ -157,7 +158,7 @@ export function SheetsPage({
       const workbook = await parseOdsArrayBuffer(
         sheet.contentPath
           ? await fetchSheetBytes(sheet.contentPath)
-          : await window.castleDesktop!.readManagedSheet(sheet.relativePath),
+          : await desktopServices!.readManagedSheet(sheet.relativePath),
       );
       setOpenedSpreadsheet({
         sessionId: nextSessionIdRef.current++,
@@ -180,7 +181,7 @@ export function SheetsPage({
     } finally {
       setOpeningManagedPath("");
     }
-  }, []);
+  }, [desktopServices]);
 
   useEffect(() => {
     if (
@@ -325,6 +326,7 @@ export function SheetsPage({
 }
 
 export function SheetsLibraryPage() {
+  const desktopServices = useCastlePlatform().desktopServices;
   const { "*": folderPath = "" } = useParams();
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useLibraryViewMode();
@@ -366,7 +368,7 @@ export function SheetsLibraryPage() {
     setLoading(true);
     setError("");
     try {
-      setSheets(await loadLibrarySheets());
+      setSheets(await loadLibrarySheets(desktopServices));
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -376,7 +378,7 @@ export function SheetsLibraryPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [desktopServices]);
 
   useEffect(() => {
     void refresh();
@@ -679,6 +681,7 @@ export function SpreadsheetPanel({
   onSelectSheet: (index: number) => void;
   onUpdateWorkbook: (workbook: OdsWorkbook) => void;
 }) {
+  const desktopServices = useCastlePlatform().desktopServices;
   const readOnly = document.readOnly === true;
   const [selectedCell, setSelectedCell] = useState({ rowIndex: 0, columnIndex: 0 });
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnIndex: number } | null>(null);
@@ -823,12 +826,12 @@ export function SpreadsheetPanel({
   }, [document]);
 
   const save = useCallback(async () => {
-    if (!document.managedRelativePath || !window.castleDesktop) return;
+    if (!document.managedRelativePath || !desktopServices) return;
     if (document.workbook.sheets.some((sheet) => sheet.truncated)) return;
     setSaveState("saving");
     setSaveError("");
     try {
-      const saved = await window.castleDesktop.saveManagedSheet(
+      const saved = await desktopServices.saveManagedSheet(
         document.managedRelativePath,
         createOdsArchive(document.workbook),
       );
@@ -841,7 +844,7 @@ export function SpreadsheetPanel({
       setSaveState("idle");
       setSaveError(reason instanceof Error ? reason.message : "Castle could not save this spreadsheet.");
     }
-  }, [document, onUpdateWorkbook]);
+  }, [desktopServices, document, onUpdateWorkbook]);
 
   const handleCellKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, rowIndex: number, columnIndex: number) => {
     if (!readOnly && (event.key === "Enter" || event.key === "F2")) {

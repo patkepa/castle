@@ -1,9 +1,11 @@
 import {
   createContext,
+  useEffect,
   useContext,
   type ReactNode,
 } from "react";
 import type { CastlePlatform } from "./castle_platform";
+import { configureCastleUserPreferenceServices } from "../lib/userPreferences";
 
 const CastlePlatformContext = createContext<CastlePlatform | null>(null);
 
@@ -14,6 +16,10 @@ export function CastlePlatformProvider({
   children: ReactNode;
   platform: CastlePlatform;
 }) {
+  useEffect(
+    () => configureCastleUserPreferenceServices(platform.desktopServices),
+    [platform.desktopServices],
+  );
   return (
     <CastlePlatformContext.Provider value={platform}>
       {children}

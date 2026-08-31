@@ -158,7 +158,10 @@ function CastleApp() {
   if (desktopBridge && desktopInfo && !desktopInfo.library) {
     return (
       <ThemeProvider>
-        <LibraryChooser bridge={desktopBridge} libraries={desktopInfo.libraries} />
+        <LibraryChooser
+          desktopServices={platform.desktopServices!}
+          libraries={desktopInfo.libraries}
+        />
       </ThemeProvider>
     );
   }

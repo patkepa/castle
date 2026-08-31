@@ -1046,22 +1046,21 @@ function CastleApp({
 
 function DesktopContentBridge() {
   const { applyDelta, knowledgeBase } = useKnowledgeBaseStore();
+  const desktopServices = useCastlePlatform().desktopServices;
   const latestDeltaGeneratedAt = useRef("");
 
   useEffect(() => {
-    const bridge = window.castleDesktop;
-    if (!bridge) return;
-    return bridge.onContentDelta((delta) => {
+    if (!desktopServices) return;
+    return desktopServices.onContentDelta((delta) => {
       latestDeltaGeneratedAt.current = delta.generatedAt;
       applyDelta(delta);
       announceGeneratedContentChange(delta.mutableResourcePaths);
     });
-  }, [applyDelta]);
+  }, [applyDelta, desktopServices]);
 
   useEffect(() => {
-    const bridge = window.castleDesktop;
     const generatedAt = knowledgeBase.generatedAt;
-    if (!bridge || !generatedAt) return;
+    if (!desktopServices || !generatedAt) return;
     let active = true;
     let announcedRevision = "";
     const refreshIfNewer = (status: { state: string; generatedAt: string }) => {
@@ -1077,8 +1076,8 @@ function DesktopContentBridge() {
         announceGeneratedContentChange();
       }
     };
-    const unsubscribe = bridge.onContentServiceStatusChange(refreshIfNewer);
-    void bridge
+    const unsubscribe = desktopServices.onContentServiceStatusChange(refreshIfNewer);
+    void desktopServices
       .getInfo()
       .then((info) => refreshIfNewer(info.contentServiceStatus))
       .catch((reason: unknown) => {
@@ -1088,7 +1087,7 @@ function DesktopContentBridge() {
       active = false;
       unsubscribe();
     };
-  }, [knowledgeBase.generatedAt]);
+  }, [desktopServices, knowledgeBase.generatedAt]);
 
   return null;
 }

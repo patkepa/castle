@@ -11,17 +11,42 @@ const appsRoot = path.join(repositoryRoot, "apps");
 const packagesRoot = path.join(repositoryRoot, "packages");
 const electronRoot = path.join(desktopRoot, "electron");
 const sharedFeatures = new Set(["context_menu", "records"]);
+const desktopBridgePath = path.join(sourceRoot, "platform", "desktop_bridge.ts");
+const desktopBridgeModulePath = desktopBridgePath.replace(/\.ts$/u, "");
+const rawBridgeConsumers = new Set([
+  path.join(sourceRoot, "main.tsx"),
+  path.join(sourceRoot, "platform", "runtime_castle_platform.ts"),
+]);
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const violations = [];
 
 for (const filePath of sourceFiles(sourceRoot)) {
   const relativePath = path.relative(sourceRoot, filePath).replaceAll(path.sep, "/");
-  const imports = importedPaths(readFileSync(filePath, "utf8"));
+  const source = readFileSync(filePath, "utf8");
+  const imports = importedPaths(source);
   const topLevelArea = relativePath.split("/")[0];
+
+  if (
+    source.includes("window.castleDesktop") &&
+    filePath !== desktopBridgePath &&
+    !rawBridgeConsumers.has(filePath)
+  ) {
+    violations.push(
+      `${relativePath}: renderer features must use CastlePlatform instead of the preload bridge`,
+    );
+  }
 
   for (const importPath of imports) {
     if (!importPath.startsWith(".")) continue;
     const targetPath = path.resolve(path.dirname(filePath), importPath);
+    if (
+      sourceModulePath(targetPath) === desktopBridgeModulePath &&
+      !rawBridgeConsumers.has(filePath)
+    ) {
+      violations.push(
+        `${relativePath}: only the composition root and runtime adapter may import the preload bridge contract`,
+      );
+    }
     if (["app", "lib", "platform"].includes(topLevelArea)) {
       if (isWithin(targetPath, featuresRoot) || isWithin(targetPath, path.join(sourceRoot, "components"))) {
         violations.push(`${relativePath}: core layer cannot import UI/domain module ${importPath}`);
@@ -115,6 +140,10 @@ function sourceFiles(directory) {
     if (entry.isDirectory()) return sourceFiles(candidate);
     return sourceExtensions.has(path.extname(entry.name)) ? [candidate] : [];
   });
+}
+
+function sourceModulePath(filePath) {
+  return filePath.replace(/\.(?:[cm]?[jt]sx?)$/u, "");
 }
 
 function importedPaths(source) {

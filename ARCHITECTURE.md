@@ -23,7 +23,9 @@ artifact must not require Rust or Node.js.
 The desktop application owns filesystem access, source mutations, file
 watching, local indexes, native integrations, and the Electron main/preload
 boundary. Its renderer should obtain those operations through `CastlePlatform`
-instead of reading `window.castleDesktop` directly.
+instead of reading `window.castleDesktop` directly. Only the renderer composition
+root and the runtime adapter may access the raw preload bridge; architecture
+checks enforce that feature code uses the platform's scoped desktop services.
 
 Rust remains the canonical implementation of Castle Markdown semantics. Astro
 renders the normalized snapshot and must not independently compile the source
@@ -62,11 +64,9 @@ Astro application, provided it supplies the same content contract.
 Vite and Forge configuration. Root scripts orchestrate both apps and the Rust
 workspace without acting as another application target.
 
-The next extractions should be made only when their first consumers are ready:
+The next extraction should be made before publishing non-synthetic libraries:
 
-1. Remove direct desktop-bridge access from shared UI code.
-2. Add an explicit public snapshot profile with field and asset allowlists
-   before publishing non-synthetic libraries.
+1. Add an explicit public snapshot profile with field and asset allowlists.
 
 Architecture checks enforce that `apps/web` cannot reach into the desktop
 renderer or Electron process code.

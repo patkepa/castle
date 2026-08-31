@@ -7,7 +7,8 @@ import {
   type ChangeEvent,
 } from "react";
 import type { Note } from "../../types";
-import type { CastleManagedCanvas } from "../../platform/desktop_bridge";
+import type { CastleManagedCanvas } from "../../platform/castle_platform";
+import { useCastlePlatform } from "../../platform/castle_platform_provider";
 import { CanvasEditor } from "./CanvasEditor";
 import {
   readLastOpenedCanvasPath,
@@ -43,7 +44,7 @@ export function CanvasPage({
   notes: readonly Note[];
   onOpenNote: (note: Note) => void;
 }) {
-  const bridge = window.castleDesktop;
+  const desktopServices = useCastlePlatform().desktopServices;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canvases, setCanvases] = useState<LibraryCanvas[]>([]);
   const [activeCanvas, setActiveCanvas] = useState<OpenCanvas | null>(null);
@@ -60,9 +61,9 @@ export function CanvasPage({
     setLoading(true);
     setError("");
     try {
-      if (bridge) {
+      if (desktopServices) {
         setCanvases(
-          (await bridge.listManagedCanvases()).map((canvas) => ({
+          (await desktopServices.listManagedCanvases()).map((canvas) => ({
             ...canvas,
             readOnly: false,
           })),
@@ -80,7 +81,7 @@ export function CanvasPage({
     } finally {
       setLoading(false);
     }
-  }, [bridge]);
+  }, [desktopServices]);
 
   useEffect(() => {
     void refreshCanvases();
@@ -94,7 +95,7 @@ export function CanvasPage({
         const data = parseJsonCanvas(
           file.contentPath
             ? await fetchCanvasSource(file.contentPath)
-            : await bridge!.readManagedCanvas(file.relativePath),
+            : await desktopServices!.readManagedCanvas(file.relativePath),
         );
         setActiveCanvas({
           sessionId: nextSessionIdRef.current++,
@@ -111,7 +112,7 @@ export function CanvasPage({
         setOpeningPath("");
       }
     },
-    [bridge],
+    [desktopServices],
   );
 
   useEffect(() => {
@@ -164,15 +165,15 @@ export function CanvasPage({
     setError("");
     try {
       const source = serializeJsonCanvas(emptyJsonCanvas);
-      const file = bridge
-        ? await bridge.createManagedCanvas(name, source)
+      const file = desktopServices
+        ? await desktopServices.createManagedCanvas(name, source)
         : {
             relativePath: name,
             name,
             size: new Blob([source]).size,
             modifiedAt: new Date().toISOString(),
           };
-      if (bridge) {
+      if (desktopServices) {
         setCanvases((current) =>
           [...current, { ...file, readOnly: false }].sort((left, right) =>
             left.relativePath.localeCompare(right.relativePath),
@@ -183,10 +184,10 @@ export function CanvasPage({
         sessionId: nextSessionIdRef.current++,
         file,
         data: { nodes: [], edges: [] },
-        managed: Boolean(bridge),
+        managed: Boolean(desktopServices),
         readOnly: false,
       });
-      if (bridge) writeLastOpenedCanvasPath(file.relativePath);
+      if (desktopServices) writeLastOpenedCanvasPath(file.relativePath);
       setNewCanvasName("");
       setNewCanvasOpen(false);
     } catch (reason) {
@@ -194,15 +195,18 @@ export function CanvasPage({
     } finally {
       setCreating(false);
     }
-  }, [bridge, newCanvasName]);
+  }, [desktopServices, newCanvasName]);
 
   const saveActiveCanvas = useCallback(
     async (data: JsonCanvas, download = false) => {
       const current = activeCanvas;
       if (!current) return;
       const source = serializeJsonCanvas(data);
-      if (current.managed && bridge) {
-        const file = await bridge.saveManagedCanvas(current.file.relativePath, source);
+      if (current.managed && desktopServices) {
+        const file = await desktopServices.saveManagedCanvas(
+          current.file.relativePath,
+          source,
+        );
         setActiveCanvas((active) =>
           active?.file.relativePath === file.relativePath
             ? { ...active, file, data }
@@ -222,26 +226,26 @@ export function CanvasPage({
       );
       if (download) downloadCanvas(current.file.name, source);
     },
-    [activeCanvas, bridge],
+    [activeCanvas, desktopServices],
   );
 
   const importCanvasMedia = useCallback(
     async (file: File) => {
-      if (!bridge || !activeCanvas?.managed) {
+      if (!desktopServices || !activeCanvas?.managed) {
         throw new Error("Canvas media can only be added to a desktop library canvas.");
       }
-      return bridge.importCanvasMedia({
+      return desktopServices.importCanvasMedia({
         name: file.name,
         mimeType: file.type,
         data: await file.arrayBuffer(),
       });
     },
-    [activeCanvas?.managed, bridge],
+    [activeCanvas?.managed, desktopServices],
   );
 
   return (
     <main className="canvas-page" aria-label="Canvas">
-      {bridge ? (
+      {desktopServices ? (
         <input
           ref={fileInputRef}
           className="sr-only"
@@ -253,7 +257,7 @@ export function CanvasPage({
       <CanvasLibraryRail
         activePath={activeCanvas?.file.relativePath ?? ""}
         canvases={canvases}
-        desktopAvailable={Boolean(bridge)}
+        desktopAvailable={Boolean(desktopServices)}
         loading={loading}
         openingPath={openingPath}
         onCreate={() => setNewCanvasOpen(true)}
@@ -292,7 +296,7 @@ export function CanvasPage({
                   : (data) => void saveActiveCanvas(data, true)
             }
             onImportMedia={
-              activeCanvas.managed && !activeCanvas.readOnly && bridge
+              activeCanvas.managed && !activeCanvas.readOnly && desktopServices
                 ? importCanvasMedia
                 : undefined
             }
@@ -300,11 +304,18 @@ export function CanvasPage({
               setError(errorMessage(reason, "Castle could not add this canvas media."))
             }
             onOpenMedia={
-              bridge
+              desktopServices
                 ? (relativePath) => {
-                    void bridge.openCanvasMedia(relativePath).catch((reason: unknown) => {
-                      setError(errorMessage(reason, "Castle could not open this canvas media."));
-                    });
+                    void desktopServices
+                      .openCanvasMedia(relativePath)
+                      .catch((reason: unknown) => {
+                        setError(
+                          errorMessage(
+                            reason,
+                            "Castle could not open this canvas media.",
+                          ),
+                        );
+                      });
                   }
                 : undefined
             }
@@ -316,14 +327,14 @@ export function CanvasPage({
           />
         ) : (
           <CanvasWelcome
-            desktopAvailable={Boolean(bridge)}
+            desktopAvailable={Boolean(desktopServices)}
             loading={loading}
             onCreate={() => setNewCanvasOpen(true)}
             onOpen={() => fileInputRef.current?.click()}
           />
         )}
       </section>
-      {newCanvasOpen && bridge ? (
+      {newCanvasOpen && desktopServices ? (
         <NewCanvasDialog
           creating={creating}
           name={newCanvasName}

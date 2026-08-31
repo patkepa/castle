@@ -1,9 +1,10 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
   defaultCastleUserPreferences,
   parseCastleUserPreferences,
   type CastleUserPreferences,
 } from "../platform/user_preferences";
+import type { CastleDesktopServices } from "../platform/castle_platform";
 import { navigationTabs, type NavigationTabId } from "./navigationPreferences";
 
 const storageKeys = {
@@ -33,13 +34,20 @@ let preferences = typeof window === "undefined"
   : readLegacyPreferences();
 let hydrationStarted = false;
 let revision = 0;
+let desktopServices: CastleDesktopServices | null = null;
 
 export function useCastleUserPreferences() {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  useEffect(() => {
-    hydrateDesktopPreferences();
-  }, []);
-  return snapshot;
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+export function configureCastleUserPreferenceServices(
+  services: CastleDesktopServices | null,
+) {
+  desktopServices = services;
+  hydrateDesktopPreferences(services);
+  return () => {
+    if (desktopServices === services) desktopServices = null;
+  };
 }
 
 export function updateCastleUserPreferences(
@@ -49,8 +57,7 @@ export function updateCastleUserPreferences(
   if (!next) throw new Error("Castle rejected invalid user preferences.");
   revision += 1;
   replacePreferences(next);
-  if (typeof window === "undefined") return;
-  void window.castleDesktop?.saveUserPreferences(next).catch((reason: unknown) => {
+  void desktopServices?.saveUserPreferences(next).catch((reason: unknown) => {
     console.error("Castle could not save interface preferences", reason);
   });
 }
@@ -70,13 +77,11 @@ function replacePreferences(next: CastleUserPreferences) {
   for (const listener of listeners) listener();
 }
 
-function hydrateDesktopPreferences() {
-  if (typeof window === "undefined" || hydrationStarted || !window.castleDesktop) {
-    return;
-  }
+function hydrateDesktopPreferences(services: CastleDesktopServices | null) {
+  if (hydrationStarted || !services) return;
   hydrationStarted = true;
   const startingRevision = revision;
-  void window.castleDesktop
+  void services
     .loadUserPreferences()
     .then((stored) => {
       if (revision !== startingRevision) return;
@@ -84,7 +89,7 @@ function hydrateDesktopPreferences() {
         replacePreferences(stored);
         return;
       }
-      return window.castleDesktop?.saveUserPreferences(preferences);
+      return services.saveUserPreferences(preferences);
     })
     .catch((reason: unknown) => {
       console.error("Castle could not load interface preferences", reason);

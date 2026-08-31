@@ -16,7 +16,8 @@ import type {
   CastleDesktopInfo,
   CastleDesktopLibrary,
   CastleLibrarySelectionResult,
-} from "../platform/desktop_bridge";
+} from "../platform/castle_platform";
+import { useCastlePlatform } from "../platform/castle_platform_provider";
 import { builtInDocumentDefinitions } from "../lib/builtInDocumentManifest";
 import {
   navigationTabs,
@@ -47,16 +48,16 @@ export function ViewSettingsMenu({
   onToggleSidebar,
 }: ViewSettingsMenuProps) {
   const menuRef = useRef<HTMLDetailsElement>(null);
+  const desktopServices = useCastlePlatform().desktopServices;
   const preferences = useCastleUserPreferences();
   const [desktopInfo, setDesktopInfo] = useState<CastleDesktopInfo | null>(null);
   const [libraryWorking, setLibraryWorking] = useState("");
   const [libraryError, setLibraryError] = useState("");
 
   useEffect(() => {
-    const bridge = window.castleDesktop;
-    if (!bridge) return;
+    if (!desktopServices) return;
     let active = true;
-    void bridge
+    void desktopServices
       .getInfo()
       .then((info) => {
         if (active) setDesktopInfo(info);
@@ -69,7 +70,7 @@ export function ViewSettingsMenu({
     return () => {
       active = false;
     };
-  }, []);
+  }, [desktopServices]);
 
   useEffect(() => {
     document.documentElement.classList.toggle(
@@ -105,15 +106,14 @@ export function ViewSettingsMenu({
       pendingSelection: Promise<CastleLibrarySelectionResult>,
       progressKey: string,
     ) => {
-      const bridge = window.castleDesktop;
-      if (!bridge) return;
+      if (!desktopServices) return;
       setLibraryWorking(progressKey);
       setLibraryError("");
       try {
         const result = await pendingSelection;
         if (result.status === "selected") {
           setLibraryWorking(result.library.path);
-          await bridge.restartApp();
+          await desktopServices.restartApp();
           return;
         }
         if (result.status === "invalid") setLibraryError(result.message);
@@ -122,30 +122,34 @@ export function ViewSettingsMenu({
       }
       setLibraryWorking("");
     },
-    [],
+    [desktopServices],
   );
 
   const chooseLibrary = useCallback(() => {
-    const bridge = window.castleDesktop;
-    if (bridge) {
-      void finishLibrarySelection(bridge.chooseLibrary(), "choose-folder");
+    if (desktopServices) {
+      void finishLibrarySelection(
+        desktopServices.chooseLibrary(),
+        "choose-folder",
+      );
     }
-  }, [finishLibrarySelection]);
+  }, [desktopServices, finishLibrarySelection]);
 
   const openLibrary = useCallback(
     (library: CastleDesktopLibrary) => {
-      const bridge = window.castleDesktop;
-      if (!bridge) return;
+      if (!desktopServices) return;
       if (!library.available) {
-        void finishLibrarySelection(bridge.chooseLibrary(), "choose-folder");
+        void finishLibrarySelection(
+          desktopServices.chooseLibrary(),
+          "choose-folder",
+        );
         return;
       }
       void finishLibrarySelection(
-        bridge.openLibrary(library.path),
+        desktopServices.openLibrary(library.path),
         library.path,
       );
     },
-    [finishLibrarySelection],
+    [desktopServices, finishLibrarySelection],
   );
 
   return (

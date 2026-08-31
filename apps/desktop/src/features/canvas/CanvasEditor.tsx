@@ -17,6 +17,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import type { Note } from "../../types";
 import { validateNoteContent, useGeneratedResource } from "../../lib/generatedData";
+import { useCastlePlatform } from "../../platform/castle_platform_provider";
 import { connectionTargetAtPoint } from "./canvasConnections";
 import {
   snapCanvasValue,
@@ -2014,10 +2015,10 @@ function CanvasLinkCard({
 }: {
   node: Extract<CanvasNode, { type: "link" }>;
 }) {
+  const desktopServices = useCastlePlatform().desktopServices;
   const previewUrl = normalizeCanvasUrl(node.url);
   const canEmbedPreview =
-    typeof window !== "undefined" &&
-    window.castleDesktop?.supportsCanvasWebPreviews === true &&
+    desktopServices?.supportsCanvasWebPreviews === true &&
     Boolean(previewUrl);
 
   return (
@@ -2033,7 +2034,7 @@ function CanvasLinkCard({
         <CanvasWebPreview host={urlHost(node.url)} url={previewUrl} />
       ) : (
         <p>
-          {typeof window !== "undefined" && window.castleDesktop
+          {desktopServices
             ? "Restart Castle to enable this page preview."
             : "Web page"}
         </p>

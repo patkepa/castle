@@ -13,6 +13,7 @@ import {
 test("the web Castle platform cannot mutate library content", () => {
   assert.equal(webCastlePlatform.runtime, "web");
   assert.equal(webCastlePlatform.contentMutations, null);
+  assert.equal(webCastlePlatform.desktopServices, null);
   assert.deepEqual(webCastlePlatform.capabilities, {
     editContent: false,
     createContent: false,
@@ -42,6 +43,7 @@ test("desktop operations stay unavailable until the main process enables them", 
   const bridge = {
     runtime: "desktop",
     operatingSystem: "darwin",
+    supportsCanvasWebPreviews: true,
     getFullScreenState: async () => false,
     onFullScreenStateChange: () => () => {},
     onContentServiceStatusChange: () => () => {},
@@ -130,6 +132,10 @@ test("desktop operations stay unavailable until the main process enables them", 
   assert.equal(desktopPlatform.capabilities.createContent, true);
   assert.equal(desktopPlatform.capabilities.moveContent, true);
   assert.equal(desktopPlatform.capabilities.deleteContent, true);
+  assert.equal(desktopPlatform.desktopServices.supportsCanvasWebPreviews, true);
+  assert.deepEqual(await desktopPlatform.desktopServices.chooseLibrary(), {
+    status: "cancelled",
+  });
   assert.equal(
     await desktopPlatform.mediaPreviews.resolveVideoPoster(
       "https://video.example.com/watch/123",

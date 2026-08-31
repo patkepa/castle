@@ -252,15 +252,8 @@ test("renders Canvas image and PDF cards with desktop media controls", () => {
 });
 
 test("renders desktop Canvas web links as isolated live previews", () => {
-  const previousWindow = globalThis.window;
-  globalThis.window = {
-    castleDesktop: {
-      runtime: "desktop",
-      supportsCanvasWebPreviews: true,
-    },
-  };
-  try {
-    const markup = render(createElement(CanvasEditor, {
+  const markup = render(
+    createElement(CanvasEditor, {
       autoSave: true,
       data: {
         nodes: [
@@ -281,25 +274,21 @@ test("renders desktop Canvas web links as isolated live previews", () => {
       onChange: () => {},
       onOpenNote: () => {},
       onSave: async () => {},
-    }));
+    }),
+    desktopPlatformWithCanvasPreviews(true),
+  );
 
-    assert.match(markup, /<webview/);
-    assert.match(markup, /aria-label="Preview of example\.com"/);
-    assert.match(markup, /partition="castle-canvas-previews"/);
-    assert.match(markup, /src="https:\/\/example\.com\/path"/);
-    assert.match(markup, /Loading page preview/);
-    assert.doesNotMatch(markup, /nodeintegration="true"/);
-  } finally {
-    if (previousWindow === undefined) delete globalThis.window;
-    else globalThis.window = previousWindow;
-  }
+  assert.match(markup, /<webview/);
+  assert.match(markup, /aria-label="Preview of example\.com"/);
+  assert.match(markup, /partition="castle-canvas-previews"/);
+  assert.match(markup, /src="https:\/\/example\.com\/path"/);
+  assert.match(markup, /Loading page preview/);
+  assert.doesNotMatch(markup, /nodeintegration="true"/);
 });
 
 test("explains when Canvas web previews need a desktop restart", () => {
-  const previousWindow = globalThis.window;
-  globalThis.window = { castleDesktop: { runtime: "desktop" } };
-  try {
-    const markup = render(createElement(CanvasEditor, {
+  const markup = render(
+    createElement(CanvasEditor, {
       autoSave: true,
       data: {
         nodes: [
@@ -320,14 +309,12 @@ test("explains when Canvas web previews need a desktop restart", () => {
       onChange: () => {},
       onOpenNote: () => {},
       onSave: async () => {},
-    }));
+    }),
+    desktopPlatformWithCanvasPreviews(false),
+  );
 
-    assert.doesNotMatch(markup, /<webview/);
-    assert.match(markup, /Restart Castle to enable this page preview/);
-  } finally {
-    if (previousWindow === undefined) delete globalThis.window;
-    else globalThis.window = previousWindow;
-  }
+  assert.doesNotMatch(markup, /<webview/);
+  assert.match(markup, /Restart Castle to enable this page preview/);
 });
 
 test("renders keyboard-navigable Library collections", () => {
@@ -690,7 +677,7 @@ test("limits the initial stash render and offers another page", () => {
   assert.match(markup, /3214 items/);
 });
 
-function render(element) {
+function render(element, platform = webCastlePlatform) {
   const originalError = console.error;
   console.error = (message, ...args) => {
     if (!String(message).includes("useLayoutEffect does nothing on the server")) {
@@ -701,7 +688,7 @@ function render(element) {
     return renderToStaticMarkup(
       createElement(
         CastlePlatformProvider,
-        { platform: webCastlePlatform },
+        { platform },
         createElement(
           MemoryRouter,
           { initialEntries: ["/"] },
@@ -712,6 +699,14 @@ function render(element) {
   } finally {
     console.error = originalError;
   }
+}
+
+function desktopPlatformWithCanvasPreviews(supportsCanvasWebPreviews) {
+  return {
+    ...webCastlePlatform,
+    runtime: "desktop",
+    desktopServices: { supportsCanvasWebPreviews },
+  };
 }
 
 function task(id, title, projectValue) {

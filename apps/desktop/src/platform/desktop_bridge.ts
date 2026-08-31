@@ -1,6 +1,13 @@
 import type {
-  CastleCapabilities,
   CastleContentDelta,
+  CastleContentServiceStatus,
+  CastleDesktopInfo,
+  CastleDesktopLibrary,
+  CastleDesktopServices,
+  CastleImportedCanvasMedia,
+  CastleLibrarySelectionResult,
+  CastleManagedCanvas,
+  CastleManagedSheet,
   CastleSourceChange,
   CastleSourceDocument,
   CreateCastleSourceInput,
@@ -28,7 +35,6 @@ import type {
   CastleStructuredQueryResponse,
 } from "./knowledge_queries";
 import type { CastleAiChat } from "./ai_chat";
-import type { CastleUserPreferences } from "./user_preferences";
 import {
   parseCastleContract,
   type CreateTaskInput,
@@ -41,81 +47,13 @@ import {
   type UpdatePersonInput,
 } from "@castle/contracts";
 
-export interface CastleContentServiceStatus {
-  state: "starting" | "ready" | "stale" | "unavailable";
-  message: string;
-  generatedAt: string;
-}
-
-export interface CastleDesktopLibrary {
-  name: string;
-  path: string;
-  available: boolean;
-  active: boolean;
-}
-
-export type CastleLibrarySelectionResult =
-  | { status: "selected"; library: CastleDesktopLibrary }
-  | { status: "cancelled" }
-  | { status: "invalid"; message: string };
-
-export interface CastleDesktopInfo {
-  runtime: "desktop";
-  operatingSystem: string;
-  library: CastleDesktopLibrary | null;
-  libraries: CastleDesktopLibrary[];
-  capabilities: Readonly<CastleCapabilities>;
-  contentServiceStatus: CastleContentServiceStatus;
-}
-
-export interface CastleManagedSheet {
-  relativePath: string;
-  name: string;
-  size: number;
-  modifiedAt: string;
-}
-
-export interface CastleManagedCanvas {
-  relativePath: string;
-  name: string;
-  size: number;
-  modifiedAt: string;
-}
-
-export interface CastleImportedCanvasMedia {
-  file: string;
-  kind: "image" | "pdf";
-}
-
-export interface CastleDesktopBridge {
+export interface CastleDesktopBridge extends CastleDesktopServices {
   runtime: "desktop";
   operatingSystem: string;
   supportsCanvasWebPreviews: true;
   getFullScreenState(): Promise<boolean>;
   onFullScreenStateChange(listener: (isFullScreen: boolean) => void): () => void;
-  onContentServiceStatusChange(
-    listener: (status: CastleContentServiceStatus) => void,
-  ): () => void;
   onSourceChange(listener: (change: CastleSourceChange) => void): () => void;
-  onContentDelta(listener: (delta: CastleContentDelta) => void): () => void;
-  getInfo(): Promise<CastleDesktopInfo>;
-  loadUserPreferences(): Promise<CastleUserPreferences | null>;
-  saveUserPreferences(preferences: CastleUserPreferences): Promise<CastleUserPreferences>;
-  chooseLibrary(): Promise<CastleLibrarySelectionResult>;
-  openLibrary(libraryPath: string): Promise<CastleLibrarySelectionResult>;
-  listManagedSheets(): Promise<CastleManagedSheet[]>;
-  readManagedSheet(relativePath: string): Promise<ArrayBuffer>;
-  saveManagedSheet(relativePath: string, archive: ArrayBuffer): Promise<CastleManagedSheet>;
-  listManagedCanvases(): Promise<CastleManagedCanvas[]>;
-  readManagedCanvas(relativePath: string): Promise<string>;
-  createManagedCanvas(relativePath: string, source: string): Promise<CastleManagedCanvas>;
-  saveManagedCanvas(relativePath: string, source: string): Promise<CastleManagedCanvas>;
-  importCanvasMedia(input: {
-    name: string;
-    mimeType: string;
-    data: ArrayBuffer;
-  }): Promise<CastleImportedCanvasMedia>;
-  openCanvasMedia(relativePath: string): Promise<void>;
   resolveVideoPoster(sourceUrl: string): Promise<string | null>;
   readSource(noteId: string): Promise<CastleSourceDocument>;
   saveSource(input: SaveCastleSourceInput): Promise<SaveCastleSourceResult>;
@@ -142,8 +80,17 @@ export interface CastleDesktopBridge {
   getKnowledgeOverview(): Promise<CastleKnowledgeOverview>;
   aiChat: CastleAiChat;
   retryContentService(): Promise<CastleContentServiceStatus>;
-  restartApp(): Promise<void>;
 }
+
+export type {
+  CastleContentServiceStatus,
+  CastleDesktopInfo,
+  CastleDesktopLibrary,
+  CastleImportedCanvasMedia,
+  CastleLibrarySelectionResult,
+  CastleManagedCanvas,
+  CastleManagedSheet,
+};
 
 export function parseCastleManagedSheets(value: unknown): CastleManagedSheet[] {
   if (!Array.isArray(value) || value.length > 500) {

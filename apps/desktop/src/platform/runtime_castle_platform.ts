@@ -2,6 +2,7 @@ import type { CastleDesktopBridge } from "./desktop_bridge";
 import type {
   CastleCapabilities,
   CastleContentMutations,
+  CastleDesktopServices,
   CreateCastleFolderInput,
   CastlePlatform,
   CreateCastleSourceInput,
@@ -59,6 +60,30 @@ export function createDesktopCastlePlatform(
         updatePerson: (input: UpdatePersonInput) => bridge.updatePerson(input),
       })
     : null;
+  const desktopServices = Object.freeze({
+    supportsCanvasWebPreviews: bridge.supportsCanvasWebPreviews === true,
+    getInfo: () => bridge.getInfo(),
+    onContentServiceStatusChange: (listener) =>
+      bridge.onContentServiceStatusChange(listener),
+    onContentDelta: (listener) => bridge.onContentDelta(listener),
+    loadUserPreferences: () => bridge.loadUserPreferences(),
+    saveUserPreferences: (preferences) => bridge.saveUserPreferences(preferences),
+    chooseLibrary: () => bridge.chooseLibrary(),
+    openLibrary: (libraryPath) => bridge.openLibrary(libraryPath),
+    restartApp: () => bridge.restartApp(),
+    listManagedSheets: () => bridge.listManagedSheets(),
+    readManagedSheet: (relativePath) => bridge.readManagedSheet(relativePath),
+    saveManagedSheet: (relativePath, archive) =>
+      bridge.saveManagedSheet(relativePath, archive),
+    listManagedCanvases: () => bridge.listManagedCanvases(),
+    readManagedCanvas: (relativePath) => bridge.readManagedCanvas(relativePath),
+    createManagedCanvas: (relativePath, source) =>
+      bridge.createManagedCanvas(relativePath, source),
+    saveManagedCanvas: (relativePath, source) =>
+      bridge.saveManagedCanvas(relativePath, source),
+    importCanvasMedia: (input) => bridge.importCanvasMedia(input),
+    openCanvasMedia: (relativePath) => bridge.openCanvasMedia(relativePath),
+  } satisfies CastleDesktopServices);
 
   return Object.freeze({
     runtime: "desktop",
@@ -84,6 +109,7 @@ export function createDesktopCastlePlatform(
       overview: () => bridge.getKnowledgeOverview(),
     }),
     aiChat: bridge.aiChat,
+    desktopServices,
   });
 }
 
