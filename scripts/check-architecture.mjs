@@ -21,6 +21,47 @@ const rawBridgeConsumers = new Set([
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const violations = [];
 
+for (const obsoletePath of [
+  "test",
+  "schemas",
+  "wrangler.jsonc",
+  "scripts/build-cloudflare.mjs",
+  "scripts/check-private-deploy.mjs",
+  "scripts/generate-blueprint-icon-loader.mjs",
+  "scripts/generate-contracts.mjs",
+  "scripts/register-desktop-tsx.mjs",
+  "config/typescript/electron.json",
+]) {
+  if (existsSync(path.join(repositoryRoot, obsoletePath))) {
+    violations.push(`${obsoletePath}: application-owned files must not live at repository root`);
+  }
+}
+
+const rootDependencies = {
+  ...rootPackage.dependencies,
+  ...rootPackage.devDependencies,
+};
+for (const applicationDependency of [
+  "@astrojs/react",
+  "@blueprintjs/icons",
+  "@electron-forge/cli",
+  "@electron/fuses",
+  "@vitejs/plugin-react",
+  "astro",
+  "electron",
+  "leaflet",
+  "react",
+  "react-dom",
+  "react-router-dom",
+  "vite",
+]) {
+  if (rootDependencies[applicationDependency]) {
+    violations.push(
+      `package.json: application dependency ${applicationDependency} belongs to its workspace`,
+    );
+  }
+}
+
 for (const [scriptName, profile, output] of [
   ["generate:content", "desktop", "apps/desktop/public"],
   ["generate:content:web", "public", "apps/web/public"],

@@ -6,7 +6,13 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "test": "node --import tsx --test test/*.test.js"
+  },
   "dependencies": {
     "github-slugger": "^2.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1"
   }
 }

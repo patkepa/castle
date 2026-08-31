@@ -15,22 +15,22 @@ const SCHEMAS: [(&str, &str, &str); 4] = [
     (
         "person",
         "person_",
-        include_str!("../../../schemas/person.schema.json"),
+        include_str!("../schemas/person.schema.json"),
     ),
     (
         "project",
         "project_",
-        include_str!("../../../schemas/project.schema.json"),
+        include_str!("../schemas/project.schema.json"),
     ),
     (
         "task",
         "task_",
-        include_str!("../../../schemas/task.schema.json"),
+        include_str!("../schemas/task.schema.json"),
     ),
     (
         "calendar_event",
         "event_",
-        include_str!("../../../schemas/calendar_event.schema.json"),
+        include_str!("../schemas/calendar_event.schema.json"),
     ),
 ];
 

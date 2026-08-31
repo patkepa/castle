@@ -12,6 +12,10 @@ needed while producing its build input. Generated application DTOs and their
 runtime validators are shared through `@castle/contracts`; runtime-neutral
 Markdown and route semantics are shared through `@castle/content`.
 
+Application code, tests, configuration, and application-specific scripts are
+colocated under `apps/desktop` and `apps/web`. Shared packages own their tests
+and generators, while the repository root only orchestrates the workspaces.
+
 [Explore the live demo](https://patkepa.github.io/castle/)
 
 ## Getting started

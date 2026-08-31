@@ -71,8 +71,14 @@ Astro application, provided it supplies the same content contract.
 ## Workspace ownership
 
 `apps/desktop` owns the React renderer, Electron main/preload processes, and its
-Vite and Forge configuration. Root scripts orchestrate both apps and the Rust
-workspace without acting as another application target.
+Vite and Forge configuration, tests, and application-specific scripts.
+`apps/web` owns Astro, its deployment configuration and scripts, and web tests.
+Shared packages own their generators and tests. Record schemas live beside
+`castle-core`, which is their only consumer.
+
+The repository root contains workspace manifests, documentation, shared
+configuration, and scripts that coordinate more than one workspace. It does
+not act as another application target or own application dependencies.
 
 Architecture checks enforce that `apps/web` cannot reach into the desktop
 renderer or Electron process code.

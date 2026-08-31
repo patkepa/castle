@@ -4,7 +4,8 @@ This workspace is the content backend for Castle.
 
 - `castle_core` compiles the Markdown library into typed projections, validates
   Castle Records, resolves Obsidian links, writes content-addressed snapshots,
-  and implements transactional source mutations.
+  and implements transactional source mutations. It also owns the JSON schemas
+  used to validate those records.
 - `castle_cli` exposes `build`, `validate`, and the persistent Electron
   `daemon`.
 - `castle_snapshot` emits application build inputs and requires an explicit
