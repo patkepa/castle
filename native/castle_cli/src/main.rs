@@ -20,8 +20,8 @@ use castle_core::{
     CastleService, CompileOptions, CreateFolderInput, CreateSourceInput, DeleteFolderInput,
     DeleteSourceInput, IndexProjection, MigrationOptions, MigrationSeverity, MoveSourceInput,
     RestoreSourceInput, SaveSourceInput, ServiceOptions, SnapshotDelta, SnapshotOptions,
-    SourceConflict, apply_record_migrations, build_index_projection, compile_changed_sources,
-    compile_library, load_castle_configuration, plan_record_migrations,
+    SnapshotProfile, SourceConflict, apply_record_migrations, build_index_projection,
+    compile_changed_sources, compile_library, load_castle_configuration, plan_record_migrations,
     write_incremental_note_resources, write_incremental_snapshot, write_snapshot,
 };
 use castle_index::{
@@ -1131,6 +1131,7 @@ fn run(paths: Paths, write: bool) -> Result<()> {
             &SnapshotOptions {
                 generated_path: paths.generated,
                 public_root: paths.public,
+                profile: SnapshotProfile::Desktop,
             },
         )?;
     }

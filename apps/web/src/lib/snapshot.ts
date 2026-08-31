@@ -4,8 +4,9 @@ export { noteRoutePath, withBase } from "@castle/content";
 import {
   CASTLE_CONTENT_CONTRACT_VERSION,
   parseCastleContract,
-  type CatalogNote,
-  type KnowledgeBase,
+  type PublicCatalogNote,
+  type PublicKnowledgeBase,
+  type PublicNoteContent,
 } from "@castle/contracts";
 
 // Astro bundles this module before prerendering, so import.meta.url no longer
@@ -13,21 +14,16 @@ import {
 // apps/web as their working directory, which is the stable snapshot anchor.
 const publicRoot = path.resolve(process.cwd(), "public");
 
-export type CastleNote = CatalogNote;
-export type CastleCatalog = KnowledgeBase;
-
-export interface CastleNoteContent {
-  id: string;
-  content: string;
-  headings: Array<{ depth: number; label: string; id: string; line: number }>;
-}
+export type CastleNote = PublicCatalogNote;
+export type CastleCatalog = PublicKnowledgeBase;
+export type CastleNoteContent = PublicNoteContent;
 
 let catalogRequest: Promise<CastleCatalog> | undefined;
 
 export function loadCatalog() {
   catalogRequest ??= readJson<unknown>("generated/catalog.json").then(
     (value) => {
-      const catalog = parseCastleContract("KnowledgeBase", value);
+      const catalog = parseCastleContract("PublicKnowledgeBase", value);
       if (catalog.contractVersion !== CASTLE_CONTENT_CONTRACT_VERSION) {
         throw new Error(
           `Castle web supports content contract ${CASTLE_CONTENT_CONTRACT_VERSION}, received ${catalog.contractVersion}.`,

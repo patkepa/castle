@@ -40,7 +40,7 @@ pub use service::{
     ServiceState, SourceDocument,
 };
 pub use snapshot::{
-    SnapshotDelta, SnapshotOptions, write_incremental_note_resources, write_incremental_snapshot,
-    write_snapshot, write_snapshot_with_projection,
+    SnapshotDelta, SnapshotOptions, SnapshotProfile, write_incremental_note_resources,
+    write_incremental_snapshot, write_snapshot, write_snapshot_with_projection,
 };
 pub use source_storage::{SourceConflict, source_revision};

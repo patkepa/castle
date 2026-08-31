@@ -49,7 +49,15 @@ alongside its tracked deployment metadata as `publicDir` and reads its catalog
 during prerendering. Each Castle note gets a real static
 `/note/.../index.html` route.
 
-The snapshot is a build dependency, not a runtime service:
+The snapshot is a build dependency, not a runtime service. The web builder
+selects the explicit `Public` profile; desktop and the general-purpose CLI select
+`Desktop`. The public profile projects the catalog and note resources through
+dedicated deny-unknown-field contracts, copies only referenced raster images
+with allowlisted extensions, and removes richer desktop resources from its
+output root. Its machine-readable policy is emitted as
+`generated/public-profile.json` for deployment audits.
+
+The resulting deployment pipeline is:
 
 ```text
 Rust in CI -> JSON/assets snapshot -> Astro build -> static deployment
@@ -58,15 +66,11 @@ Rust in CI -> JSON/assets snapshot -> Astro build -> static deployment
 Snapshot production can later move to a separate CI job without changing the
 Astro application, provided it supplies the same content contract.
 
-## Migration plan
+## Workspace ownership
 
 `apps/desktop` owns the React renderer, Electron main/preload processes, and its
 Vite and Forge configuration. Root scripts orchestrate both apps and the Rust
 workspace without acting as another application target.
-
-The next extraction should be made before publishing non-synthetic libraries:
-
-1. Add an explicit public snapshot profile with field and asset allowlists.
 
 Architecture checks enforce that `apps/web` cannot reach into the desktop
 renderer or Electron process code.

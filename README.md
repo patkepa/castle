@@ -34,9 +34,10 @@ npm run generate:content:web
 npm run build --workspace @castle/web
 ```
 
-The first command writes ignored build input under `apps/web/public`.
-Astro consumes that snapshot and writes the deployable site to
-`apps/web/dist`.
+The first command writes an ignored, deny-by-default public snapshot under
+`apps/web/public`. Its catalog omits desktop-only metadata and it includes only
+referenced raster image assets with approved extensions. Astro consumes that
+snapshot and writes the deployable site to `apps/web/dist`.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package boundaries and the migration
 plan.

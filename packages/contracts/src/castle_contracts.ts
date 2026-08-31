@@ -303,6 +303,37 @@ export interface ProtocolHandshake {
   capabilities: Array<string>;
 }
 
+export interface PublicCatalogNote {
+  id: string;
+  section: string;
+  sectionLabel: string;
+  sourceFile: string;
+  route: string;
+  title: string;
+  excerpt: string;
+  contentPath: string;
+  wordCount: number;
+  readingMinutes: number;
+}
+
+export interface PublicKnowledgeBase {
+  contractVersion: number;
+  generatedAt: string;
+  sections: Array<PublicSectionSummary>;
+  notes: Array<PublicCatalogNote>;
+}
+
+export interface PublicNoteContent {
+  id: string;
+  content: string;
+}
+
+export interface PublicSectionSummary {
+  id: string;
+  label: string;
+  count: number;
+}
+
 export interface RestoreSourceInput {
   noteId: string;
   sourceFile: string;
@@ -473,6 +504,10 @@ export interface CastleContractMap {
   ProjectsResource: ProjectsResource;
   ProjectStatus: ProjectStatus;
   ProtocolHandshake: ProtocolHandshake;
+  PublicCatalogNote: PublicCatalogNote;
+  PublicKnowledgeBase: PublicKnowledgeBase;
+  PublicNoteContent: PublicNoteContent;
+  PublicSectionSummary: PublicSectionSummary;
   RestoreSourceInput: RestoreSourceInput;
   RestoreTaskInput: RestoreTaskInput;
   SaveSourceInput: SaveSourceInput;

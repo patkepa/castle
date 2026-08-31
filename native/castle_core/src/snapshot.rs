@@ -1,12 +1,14 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs,
     io::Cursor,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
 use anyhow::{Context, Result};
 use image::{ImageFormat, imageops::FilterType};
+use regex::Regex;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use walkdir::WalkDir;
@@ -15,8 +17,28 @@ use crate::IndexProjection;
 use crate::{CastleCompilation, model::KnowledgeBase};
 use castle_contracts::{
     CONTENT_CONTRACT_VERSION, CalendarResource, GeneratedResourceDescriptor,
-    GeneratedResourceManifest, NotesResource, ProjectsResource, TasksResource,
+    GeneratedResourceManifest, NotesResource, ProjectsResource, PublicCatalogNote,
+    PublicKnowledgeBase, PublicNoteContent, PublicSectionSummary, TasksResource,
 };
+
+const PUBLIC_CATALOG_FIELDS: [&str; 4] = ["contractVersion", "generatedAt", "sections", "notes"];
+const PUBLIC_SECTION_FIELDS: [&str; 3] = ["id", "label", "count"];
+const PUBLIC_NOTE_FIELDS: [&str; 10] = [
+    "id",
+    "section",
+    "sectionLabel",
+    "sourceFile",
+    "route",
+    "title",
+    "excerpt",
+    "contentPath",
+    "wordCount",
+    "readingMinutes",
+];
+const PUBLIC_NOTE_CONTENT_FIELDS: [&str; 2] = ["id", "content"];
+const PUBLIC_ASSET_EXTENSIONS: [&str; 6] = ["png", "jpg", "jpeg", "gif", "webp", "avif"];
+static MARKDOWN_ASSET_DESTINATION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"!?\[[^\]]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)\r\n]+))"#).unwrap());
 
 const BUILT_IN_OVERRIDE_SOURCE_FILES: [&str; 1] = ["notes/castle_help.md"];
 const MAXIMUM_SHEET_BYTES: u64 = 50 * 1024 * 1024;
@@ -64,6 +86,25 @@ struct GeneratedCanvas {
 pub struct SnapshotOptions {
     pub generated_path: Option<PathBuf>,
     pub public_root: PathBuf,
+    pub profile: SnapshotProfile,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnapshotProfile {
+    Desktop,
+    Public,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PublicSnapshotPolicy {
+    profile: &'static str,
+    contract_version: u32,
+    catalog_fields: &'static [&'static str],
+    section_fields: &'static [&'static str],
+    note_fields: &'static [&'static str],
+    note_content_fields: &'static [&'static str],
+    asset_extensions: &'static [&'static str],
 }
 
 #[derive(Debug, Clone, Default)]
@@ -87,6 +128,16 @@ pub fn write_snapshot_with_projection(
 }
 
 fn write_snapshot_contents(
+    compilation: &CastleCompilation,
+    options: &SnapshotOptions,
+) -> Result<()> {
+    match options.profile {
+        SnapshotProfile::Desktop => write_desktop_snapshot_contents(compilation, options),
+        SnapshotProfile::Public => write_public_snapshot_contents(compilation, options),
+    }
+}
+
+fn write_desktop_snapshot_contents(
     compilation: &CastleCompilation,
     options: &SnapshotOptions,
 ) -> Result<()> {
@@ -154,11 +205,130 @@ fn write_snapshot_contents(
     Ok(())
 }
 
+fn write_public_snapshot_contents(
+    compilation: &CastleCompilation,
+    options: &SnapshotOptions,
+) -> Result<()> {
+    let catalog = public_knowledge_base(&compilation.knowledge_base);
+    if let Some(generated_path) = &options.generated_path {
+        if let Some(parent) = generated_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        atomic_write(generated_path, &serde_json::to_vec_pretty(&catalog)?)?;
+    }
+
+    let generated_root = options.public_root.join("generated");
+    let notes_root = generated_root.join("notes");
+    fs::create_dir_all(&notes_root)?;
+    let mut desired_notes = HashSet::new();
+    for resource in &compilation.note_resources {
+        let relative = resource
+            .content_path
+            .trim_start_matches('/')
+            .trim_start_matches("generated/");
+        desired_notes.insert(relative.to_owned());
+        atomic_write(
+            &generated_root.join(relative),
+            &serde_json::to_vec(&PublicNoteContent {
+                id: resource.content.id.clone(),
+                content: resource.content.content.clone(),
+            })?,
+        )?;
+    }
+    remove_stale_note_resources(&notes_root, &desired_notes)?;
+    remove_private_generated_resources(&generated_root)?;
+    sync_public_assets(compilation, &options.public_root)?;
+    atomic_write(
+        &generated_root.join("public-profile.json"),
+        &serde_json::to_vec_pretty(&PublicSnapshotPolicy {
+            profile: "public",
+            contract_version: CONTENT_CONTRACT_VERSION,
+            catalog_fields: &PUBLIC_CATALOG_FIELDS,
+            section_fields: &PUBLIC_SECTION_FIELDS,
+            note_fields: &PUBLIC_NOTE_FIELDS,
+            note_content_fields: &PUBLIC_NOTE_CONTENT_FIELDS,
+            asset_extensions: &PUBLIC_ASSET_EXTENSIONS,
+        })?,
+    )?;
+    // Catalog is the publication pointer, so publish it last.
+    atomic_write(
+        &generated_root.join("catalog.json"),
+        &serde_json::to_vec(&catalog)?,
+    )?;
+    Ok(())
+}
+
+fn public_knowledge_base(knowledge_base: &KnowledgeBase) -> PublicKnowledgeBase {
+    PublicKnowledgeBase {
+        contract_version: knowledge_base.contract_version,
+        generated_at: knowledge_base.generated_at.clone(),
+        sections: knowledge_base
+            .sections
+            .iter()
+            .map(|section| PublicSectionSummary {
+                id: section.id.clone(),
+                label: section.label.clone(),
+                count: section.count,
+            })
+            .collect(),
+        notes: knowledge_base
+            .notes
+            .iter()
+            .map(|note| PublicCatalogNote {
+                id: note.id.clone(),
+                section: note.section.clone(),
+                section_label: note.section_label.clone(),
+                source_file: note.source_file.clone(),
+                route: note.route.clone(),
+                title: note.title.clone(),
+                excerpt: note.excerpt.clone(),
+                content_path: note.content_path.clone(),
+                word_count: note.word_count,
+                reading_minutes: note.reading_minutes,
+            })
+            .collect(),
+    }
+}
+
+fn remove_stale_note_resources(notes_root: &Path, desired_notes: &HashSet<String>) -> Result<()> {
+    for entry in fs::read_dir(notes_root)? {
+        let entry = entry?;
+        let relative = format!("notes/{}", entry.file_name().to_string_lossy());
+        if entry.file_type()?.is_file() && !desired_notes.contains(&relative) {
+            fs::remove_file(entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+fn remove_private_generated_resources(generated_root: &Path) -> Result<()> {
+    for entry in fs::read_dir(generated_root)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        if matches!(
+            name.to_str(),
+            Some("notes" | "catalog.json" | "public-profile.json")
+        ) {
+            continue;
+        }
+        if entry.file_type()?.is_dir() {
+            fs::remove_dir_all(entry.path())?;
+        } else {
+            fs::remove_file(entry.path())?;
+        }
+    }
+    Ok(())
+}
+
 pub fn write_incremental_snapshot(
     compilation: &CastleCompilation,
     options: &SnapshotOptions,
     delta: &SnapshotDelta,
 ) -> Result<()> {
+    anyhow::ensure!(
+        options.profile == SnapshotProfile::Desktop,
+        "public snapshots must be written atomically with write_snapshot"
+    );
     let knowledge_base = &compilation.knowledge_base;
     let generated_root = options.public_root.join("generated");
     write_incremental_note_resources(compilation, options, &delta.changed_note_ids)?;
@@ -202,6 +372,10 @@ pub fn write_incremental_note_resources(
     options: &SnapshotOptions,
     changed_note_ids: &HashSet<String>,
 ) -> Result<()> {
+    anyhow::ensure!(
+        options.profile == SnapshotProfile::Desktop,
+        "public note resources must be written atomically with write_snapshot"
+    );
     let generated_root = options.public_root.join("generated");
     fs::create_dir_all(generated_root.join("notes"))?;
     for resource in compilation
@@ -530,9 +704,152 @@ fn sync_assets(compilation: &CastleCompilation, public_root: &Path) -> Result<()
     Ok(())
 }
 
+fn sync_public_assets(compilation: &CastleCompilation, public_root: &Path) -> Result<()> {
+    let source_files = compilation
+        .knowledge_base
+        .notes
+        .iter()
+        .map(|note| (note.id.as_str(), note.source_file.as_str()))
+        .collect::<HashMap<_, _>>();
+    let mut referenced = HashSet::new();
+    for resource in &compilation.note_resources {
+        let Some(source_file) = source_files.get(resource.content.id.as_str()) else {
+            continue;
+        };
+        for captures in MARKDOWN_ASSET_DESTINATION.captures_iter(&resource.content.content) {
+            let Some(destination) = captures.get(1).or_else(|| captures.get(2)) else {
+                continue;
+            };
+            if let Some(relative) =
+                resolve_public_asset_reference(source_file, destination.as_str())
+            {
+                referenced.insert(relative);
+            }
+        }
+    }
+
+    let mut desired = HashSet::new();
+    for source in &compilation.asset_files {
+        let relative = source.strip_prefix(&compilation.library_root)?;
+        let relative_path = relative.to_string_lossy().replace('\\', "/");
+        let extension = relative
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(str::to_ascii_lowercase);
+        if !extension
+            .as_deref()
+            .is_some_and(|value| PUBLIC_ASSET_EXTENSIONS.contains(&value))
+            || !referenced.contains(&relative_path)
+        {
+            continue;
+        }
+        let public_relative = if relative.starts_with("assets") {
+            relative.to_owned()
+        } else {
+            PathBuf::from("content-assets").join(relative)
+        };
+        desired.insert(public_relative.clone());
+        let destination = public_root.join(&public_relative);
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::copy(source, &destination)
+            .with_context(|| format!("could not copy public asset {}", source.display()))?;
+    }
+    remove_stale_assets(public_root, &desired)
+}
+
+fn resolve_public_asset_reference(source_file: &str, raw: &str) -> Option<String> {
+    let raw = raw.split(['?', '#']).next().unwrap_or(raw);
+    if raw.is_empty()
+        || raw.starts_with("data:")
+        || raw.starts_with("http://")
+        || raw.starts_with("https://")
+        || raw.starts_with("//")
+    {
+        return None;
+    }
+    let decoded = percent_decode(raw)?;
+    let relative = if let Some(value) = decoded.strip_prefix("/content-assets/") {
+        value.to_owned()
+    } else if let Some(value) = decoded.strip_prefix('/') {
+        value.to_owned()
+    } else if let Some(value) = decoded.strip_prefix("content-assets/") {
+        value.to_owned()
+    } else if decoded.starts_with("assets/") {
+        decoded
+    } else {
+        let directory = source_file.rsplit_once('/').map_or("", |value| value.0);
+        format!("{directory}/{decoded}")
+    };
+    normalize_public_asset_path(&relative)
+}
+
+fn normalize_public_asset_path(value: &str) -> Option<String> {
+    let normalized = value.replace('\\', "/");
+    let mut parts = Vec::new();
+    for part in normalized.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                parts.pop()?;
+            }
+            value => parts.push(value),
+        }
+    }
+    (!parts.is_empty()).then(|| parts.join("/"))
+}
+
+fn percent_decode(value: &str) -> Option<String> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            let high = *bytes.get(index + 1)?;
+            let low = *bytes.get(index + 2)?;
+            decoded.push(hex_value(high)? * 16 + hex_value(low)?);
+            index += 3;
+        } else {
+            decoded.push(bytes[index]);
+            index += 1;
+        }
+    }
+    String::from_utf8(decoded).ok()
+}
+
+fn hex_value(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn remove_stale_assets(public_root: &Path, desired: &HashSet<PathBuf>) -> Result<()> {
+    for root in [
+        public_root.join("assets"),
+        public_root.join("content-assets"),
+    ] {
+        if !root.exists() {
+            continue;
+        }
+        for entry in WalkDir::new(&root).contents_first(true) {
+            let entry = entry?;
+            let path = entry.path();
+            if entry.file_type().is_dir() {
+                let _ = fs::remove_dir(path);
+            } else if !desired.contains(path.strip_prefix(public_root)?) {
+                fs::remove_file(path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Publishes the managed spreadsheet library as immutable binary assets plus a
-/// small catalog. Desktop reads these files directly, while the web build uses
-/// this snapshot for its deliberately read-only Sheets workspace.
+/// small catalog for the full desktop snapshot.
 fn sync_sheets(compilation: &CastleCompilation, public_root: &Path) -> Result<()> {
     let sheets_root = compilation.library_root.join("sheets");
     sync_sheets_from_root(
@@ -628,7 +945,7 @@ fn sync_sheets_from_root(sheets_root: &Path, public_root: &Path, generated_at: &
     Ok(())
 }
 
-/// Publishes JSON Canvas files for Cloudflare's read-only Canvas workspace.
+/// Publishes JSON Canvas files for the full desktop snapshot.
 fn sync_canvases(compilation: &CastleCompilation, public_root: &Path) -> Result<()> {
     sync_canvases_from_root(
         &compilation.library_root.join("canvas"),
@@ -745,6 +1062,7 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{CompileOptions, compile_library};
     use castle_contracts::CatalogNote;
 
     #[test]
@@ -878,6 +1196,103 @@ mod tests {
             fs::read(root.path().join(content_path.trim_start_matches('/'))).unwrap(),
             canvas
         );
+    }
+
+    #[test]
+    fn public_snapshot_enforces_field_and_asset_allowlists() {
+        let root = tempfile::tempdir().unwrap();
+        let library = root.path().join("library");
+        let public = root.path().join("public");
+        fs::create_dir_all(library.join("notes")).unwrap();
+        fs::create_dir_all(library.join("assets/images")).unwrap();
+        fs::write(
+            library.join("notes/hello.md"),
+            concat!(
+                "---\ntags: [private-tag]\nstatus: private\n---\n",
+                "# Hello\n\nPublic body.\n\n",
+                "![Published](assets/images/published.png)\n",
+                "![Unsafe](assets/images/unsafe.svg)\n",
+            ),
+        )
+        .unwrap();
+        fs::write(library.join("assets/images/published.png"), b"published").unwrap();
+        fs::write(library.join("assets/images/unreferenced.png"), b"private").unwrap();
+        fs::write(
+            library.join("assets/images/unsafe.svg"),
+            br#"<svg onload="alert(1)"/>"#,
+        )
+        .unwrap();
+
+        fs::create_dir_all(public.join("generated/domains")).unwrap();
+        fs::create_dir_all(public.join("generated/sheets/files")).unwrap();
+        fs::create_dir_all(public.join("assets/images")).unwrap();
+        fs::write(public.join("generated/search-index.json"), b"private").unwrap();
+        fs::write(public.join("generated/domains/tasks.json"), b"private").unwrap();
+        fs::write(
+            public.join("generated/sheets/files/private.ods"),
+            b"private",
+        )
+        .unwrap();
+        fs::write(public.join("assets/images/stale.png"), b"private").unwrap();
+
+        let compilation = compile_library(&CompileOptions::new(&library, root.path())).unwrap();
+        write_snapshot(
+            &compilation,
+            &SnapshotOptions {
+                generated_path: None,
+                public_root: public.clone(),
+                profile: SnapshotProfile::Public,
+            },
+        )
+        .unwrap();
+
+        let catalog: Value =
+            serde_json::from_slice(&fs::read(public.join("generated/catalog.json")).unwrap())
+                .unwrap();
+        assert_object_keys(&catalog, &PUBLIC_CATALOG_FIELDS);
+        assert_object_keys(&catalog["sections"][0], &PUBLIC_SECTION_FIELDS);
+        assert_object_keys(&catalog["notes"][0], &PUBLIC_NOTE_FIELDS);
+        assert!(catalog["notes"][0].get("tags").is_none());
+        assert!(catalog.get("tasks").is_none());
+
+        let content_path = catalog["notes"][0]["contentPath"].as_str().unwrap();
+        let content: Value = serde_json::from_slice(
+            &fs::read(public.join(content_path.trim_start_matches('/'))).unwrap(),
+        )
+        .unwrap();
+        assert_object_keys(&content, &PUBLIC_NOTE_CONTENT_FIELDS);
+        assert!(content.get("headings").is_none());
+
+        assert!(public.join("assets/images/published.png").is_file());
+        assert!(!public.join("assets/images/unreferenced.png").exists());
+        assert!(!public.join("assets/images/unsafe.svg").exists());
+        assert!(!public.join("assets/images/stale.png").exists());
+        assert!(!public.join("generated/search-index.json").exists());
+        assert!(!public.join("generated/domains").exists());
+        assert!(!public.join("generated/sheets").exists());
+
+        let policy: Value = serde_json::from_slice(
+            &fs::read(public.join("generated/public-profile.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(policy["profile"], "public");
+        assert_eq!(
+            policy["assetExtensions"],
+            serde_json::json!(PUBLIC_ASSET_EXTENSIONS)
+        );
+    }
+
+    fn assert_object_keys(value: &Value, expected: &[&str]) {
+        let mut actual = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        let mut expected = expected.to_vec();
+        actual.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(actual, expected);
     }
 
     fn catalog_note(id: &str, source_file: &str, modified_at: &str) -> CatalogNote {

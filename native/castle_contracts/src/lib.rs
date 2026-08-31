@@ -437,6 +437,50 @@ pub struct KnowledgeBase {
     pub shortcut_collections: Vec<ShortcutCollection>,
 }
 
+/// The only section metadata that may cross the static publication boundary.
+/// Adding a field here is a deliberate public API and privacy decision.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PublicSectionSummary {
+    pub id: String,
+    pub label: String,
+    pub count: usize,
+}
+
+/// The deny-by-default catalog projection consumed by the read-only Astro app.
+/// Source metadata, personal sidebars, tags, status, and timestamps stay in the
+/// desktop snapshot unless they are explicitly added to this contract.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PublicCatalogNote {
+    pub id: String,
+    pub section: String,
+    pub section_label: String,
+    pub source_file: String,
+    pub route: String,
+    pub title: String,
+    pub excerpt: String,
+    pub content_path: String,
+    pub word_count: usize,
+    pub reading_minutes: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PublicKnowledgeBase {
+    pub contract_version: u32,
+    pub generated_at: String,
+    pub sections: Vec<PublicSectionSummary>,
+    pub notes: Vec<PublicCatalogNote>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PublicNoteContent {
+    pub id: String,
+    pub content: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratedResourceDescriptor {
@@ -652,6 +696,8 @@ pub struct CastleContractBundle {
     pub delete_folder_result: DeleteFolderResult,
     pub move_source_result: MoveSourceResult,
     pub knowledge_base: KnowledgeBase,
+    pub public_knowledge_base: PublicKnowledgeBase,
+    pub public_note_content: PublicNoteContent,
     pub generated_resource_manifest: GeneratedResourceManifest,
     pub notes_resource: NotesResource,
     pub tasks_resource: TasksResource,
@@ -702,6 +748,8 @@ mod tests {
         let definitions = schema["$defs"].as_object().expect("schema definitions");
         for name in [
             "KnowledgeBase",
+            "PublicKnowledgeBase",
+            "PublicNoteContent",
             "CompilationDelta",
             "MutateTaskInput",
             "UpdatePersonInput",

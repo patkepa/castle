@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use castle_core::{
-    CompileOptions, SnapshotOptions, compile_library, load_castle_configuration, write_snapshot,
+    CompileOptions, SnapshotOptions, SnapshotProfile, compile_library, load_castle_configuration,
+    write_snapshot,
 };
 use clap::Parser;
 
@@ -27,7 +28,7 @@ struct Paths {
     library: Option<PathBuf>,
     #[arg(long)]
     repository: Option<PathBuf>,
-    /// Also write a pretty, monolithic knowledge-base JSON file.
+    /// Also write a pretty, monolithic public catalog JSON file.
     #[arg(long)]
     generated: Option<PathBuf>,
     #[arg(long, default_value = "public")]
@@ -48,6 +49,7 @@ fn main() -> Result<()> {
         &SnapshotOptions {
             generated_path: paths.generated,
             public_root: paths.public,
+            profile: SnapshotProfile::Public,
         },
     )?;
 

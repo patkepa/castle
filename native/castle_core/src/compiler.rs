@@ -1045,6 +1045,7 @@ fn looks_like_asset(value: &str) -> bool {
                     | "gif"
                     | "svg"
                     | "webp"
+                    | "avif"
                     | "pdf"
                     | "mp3"
                     | "mp4"

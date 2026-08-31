@@ -51,6 +51,12 @@
     "knowledge_base": {
       "$ref": "#/$defs/KnowledgeBase"
     },
+    "public_knowledge_base": {
+      "$ref": "#/$defs/PublicKnowledgeBase"
+    },
+    "public_note_content": {
+      "$ref": "#/$defs/PublicNoteContent"
+    },
     "generated_resource_manifest": {
       "$ref": "#/$defs/GeneratedResourceManifest"
     },
@@ -111,6 +117,8 @@
     "delete_folder_result",
     "move_source_result",
     "knowledge_base",
+    "public_knowledge_base",
+    "public_note_content",
     "generated_resource_manifest",
     "notes_resource",
     "tasks_resource",
@@ -1217,6 +1225,130 @@
         "label",
         "description",
         "href"
+      ]
+    },
+    "PublicKnowledgeBase": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicSectionSummary"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicCatalogNote"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "generatedAt",
+        "sections",
+        "notes"
+      ]
+    },
+    "PublicSectionSummary": {
+      "description": "The only section metadata that may cross the static publication boundary.\nAdding a field here is a deliberate public API and privacy decision.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "count"
+      ]
+    },
+    "PublicCatalogNote": {
+      "description": "The deny-by-default catalog projection consumed by the read-only Astro app.\nSource metadata, personal sidebars, tags, status, and timestamps stay in the\ndesktop snapshot unless they are explicitly added to this contract.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "sectionLabel": {
+          "type": "string"
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "contentPath": {
+          "type": "string"
+        },
+        "wordCount": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "readingMinutes": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "section",
+        "sectionLabel",
+        "sourceFile",
+        "route",
+        "title",
+        "excerpt",
+        "contentPath",
+        "wordCount",
+        "readingMinutes"
+      ]
+    },
+    "PublicNoteContent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "content"
       ]
     },
     "GeneratedResourceManifest": {
