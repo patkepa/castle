@@ -220,6 +220,10 @@ const castleIconPaths: Readonly<
     () => import("@blueprintjs/icons/lib/esm/generated/16px/paths/header.js"),
     () => import("@blueprintjs/icons/lib/esm/generated/20px/paths/header.js"),
   ],
+  "heart": [
+    () => import("@blueprintjs/icons/lib/esm/generated/16px/paths/heart.js"),
+    () => import("@blueprintjs/icons/lib/esm/generated/20px/paths/heart.js"),
+  ],
   "help": [
     () => import("@blueprintjs/icons/lib/esm/generated/16px/paths/help.js"),
     () => import("@blueprintjs/icons/lib/esm/generated/20px/paths/help.js"),

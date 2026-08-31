@@ -22,11 +22,7 @@ const SCHEMAS: [(&str, &str, &str); 4] = [
         "project_",
         include_str!("../schemas/project.schema.json"),
     ),
-    (
-        "task",
-        "task_",
-        include_str!("../schemas/task.schema.json"),
-    ),
+    ("task", "task_", include_str!("../schemas/task.schema.json")),
     (
         "calendar_event",
         "event_",
