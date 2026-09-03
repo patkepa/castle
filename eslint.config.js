@@ -9,6 +9,7 @@ export default tseslint.config(
       "**/.astro/**",
       "**/.vite/**",
       "**/dist/**",
+      "**/dist-*/**",
       "**/out/**",
       "native/target/**",
       "node_modules/**",

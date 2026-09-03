@@ -1,17 +1,30 @@
 ---
 import type { CastleCatalog, CastleNote } from "../lib/snapshot";
 import { withBase } from "../lib/snapshot";
+import { getSitePresentation, sectionLabel } from "../lib/site";
 import "../styles/global.css";
+
+interface TableOfContentsItem {
+  depth: number;
+  id: string;
+  label: string;
+}
 
 interface Props {
   catalog: CastleCatalog;
   currentNote?: CastleNote;
   description?: string;
+  tableOfContents?: TableOfContentsItem[];
   title: string;
 }
 
-const { catalog, currentNote, description, title } = Astro.props;
+const { catalog, currentNote, description, tableOfContents = [], title } = Astro.props;
 const base = import.meta.env.BASE_URL;
+const site = getSitePresentation();
+const technical = site.variant === "technical";
+const visibleSections = technical
+  ? catalog.sections.filter((section) => section.count > 0)
+  : catalog.sections;
 ---
 
 <!doctype html>
@@ -19,28 +32,62 @@ const base = import.meta.env.BASE_URL;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <meta name="description" content={description ?? "A read-only Castle knowledge library."} />
+    <meta name="description" content={description ?? site.homeDescription} />
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#080a0d" />
     <title>{title}</title>
   </head>
-  <body>
+  <body data-site-variant={site.variant}>
+    {
+      technical && (
+        <header class="docs-topbar">
+          <button
+            class="docs-menu-button"
+            type="button"
+            aria-controls="library-navigation"
+            aria-expanded="false"
+            aria-label="Open documentation navigation"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+          <a class="docs-wordmark" href={withBase("/", base)}>
+            <strong>{site.name}</strong>
+            <span>{site.descriptor}</span>
+          </a>
+          <label class="docs-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
+            <span class="sr-only">Search documentation</span>
+            <input type="search" placeholder="Search the handbook…" autocomplete="off" />
+            <kbd>⌘ K</kbd>
+          </label>
+        </header>
+      )
+    }
     <div class="site-shell">
       <aside class="sidebar">
-        <a class="brand" href={withBase("/", base)} aria-label="Castle home">
-          <span class="brand-mark" aria-hidden="true">C</span>
-          <span>Castle</span>
-        </a>
-        <nav aria-label="Library">
+        {
+          !technical && (
+            <a class="brand" href={withBase("/", base)} aria-label="Castle home">
+              <span class="brand-mark" aria-hidden="true">C</span>
+              <span>Castle</span>
+            </a>
+          )
+        }
+        <nav id="library-navigation" aria-label="Library">
           {
-            catalog.sections.map((section) => (
-              <section class="nav-section">
-                <h2>{section.label}</h2>
+            visibleSections.map((section) => (
+              <section class="nav-section" data-search-group>
+                <h2>{sectionLabel(site.variant, section.id, section.label)}</h2>
                 <ul>
                   {catalog.notes
                     .filter((note) => note.section === section.id)
                     .map((note) => (
-                      <li>
+                      <li data-search-item data-search-value={`${note.title} ${note.excerpt}`}>
                         <a
                           aria-current={currentNote?.id === note.id ? "page" : undefined}
                           href={withBase(note.route, base)}
@@ -58,6 +105,72 @@ const base = import.meta.env.BASE_URL;
       <main class="content">
         <slot />
       </main>
+      {
+        technical && currentNote && (
+          <aside class="docs-outline" aria-label="On this page">
+            <section>
+              <h2>On this page</h2>
+              <ol>
+                {tableOfContents.map((item) => (
+                  <li class={`toc-depth-${item.depth}`}>
+                    <a href={`#${item.id}`}>{item.label}</a>
+                  </li>
+                ))}
+              </ol>
+            </section>
+            <section class="docs-owner">
+              <h2>Document owner</h2>
+              <p>{site.documentOwner}</p>
+            </section>
+          </aside>
+        )
+      }
     </div>
+    <script>
+      const menuButton = document.querySelector<HTMLButtonElement>(".docs-menu-button");
+      const navigation = document.querySelector<HTMLElement>(".sidebar");
+      const search = document.querySelector<HTMLInputElement>(".docs-search input");
+
+      function closeNavigation() {
+        navigation?.classList.remove("is-open");
+        menuButton?.setAttribute("aria-expanded", "false");
+      }
+
+      menuButton?.addEventListener("click", () => {
+        const open = navigation?.classList.toggle("is-open") ?? false;
+        menuButton.setAttribute("aria-expanded", String(open));
+      });
+
+      navigation?.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", closeNavigation);
+      });
+
+      search?.addEventListener("input", () => {
+        const query = search.value.trim().toLocaleLowerCase();
+        document.querySelectorAll<HTMLElement>("[data-search-item]").forEach((item) => {
+          const value = item.dataset.searchValue?.toLocaleLowerCase() ?? "";
+          item.hidden = query.length > 0 && !value.includes(query);
+        });
+        document.querySelectorAll<HTMLElement>("[data-search-group]").forEach((group) => {
+          const items = [...group.querySelectorAll<HTMLElement>("[data-search-item]")];
+          group.hidden = items.length > 0 && items.every((item) => item.hidden);
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === "k") {
+          event.preventDefault();
+          search?.focus();
+        }
+        if (event.key === "Escape") {
+          closeNavigation();
+          if (search) {
+            search.value = "";
+            search.dispatchEvent(new Event("input"));
+            search.blur();
+          }
+        }
+      });
+    </script>
   </body>
 </html>

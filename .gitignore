@@ -1,6 +1,7 @@
 node_modules/
 dist/
 apps/*/dist/
+apps/*/dist-*/
 .astro/
 apps/desktop/public/assets/
 apps/desktop/public/content-assets/

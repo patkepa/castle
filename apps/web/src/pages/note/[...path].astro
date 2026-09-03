@@ -1,12 +1,15 @@
 ---
 import { MarkdownBody } from "../../components/MarkdownBody";
 import CastleLayout from "../../layouts/CastleLayout.astro";
+import { getSitePresentation, sectionLabel } from "../../lib/site";
 import {
   loadCatalog,
   loadNoteContent,
   noteRoutePath,
+  withBase,
   type CastleNote,
 } from "../../lib/snapshot";
+import { slug } from "github-slugger";
 
 export async function getStaticPaths() {
   const catalog = await loadCatalog();
@@ -24,19 +27,40 @@ const { note } = Astro.props;
 const catalog = await loadCatalog();
 const content = await loadNoteContent(note);
 const base = import.meta.env.BASE_URL;
+const site = getSitePresentation();
+const technical = site.variant === "technical";
+const tableOfContents = technical
+  ? [...content.content.matchAll(/^(#{2,4})\s+(.+?)\s*#*$/gm)].map((match) => ({
+      depth: match[1].length,
+      id: slug(match[2]),
+      label: match[2],
+    }))
+  : [];
 ---
 
 <CastleLayout
   catalog={catalog}
   currentNote={note}
   description={note.excerpt}
-  title={`${note.title} · Castle`}
+  tableOfContents={tableOfContents}
+  title={`${note.title} · ${site.name}`}
 >
   <article class="note">
     <header class="note-header">
-      <p>{note.sectionLabel}</p>
+      {
+        technical ? (
+          <p class="docs-breadcrumb">
+            <a href={withBase("/", base)}>{sectionLabel(site.variant, note.section, note.sectionLabel)}</a>
+            <span aria-hidden="true">/</span>
+            <span>{note.title}</span>
+          </p>
+        ) : (
+          <p>{note.sectionLabel}</p>
+        )
+      }
       <h1>{note.title}</h1>
       <div class="note-meta">
+        {technical && <span>Internal reference</span>}
         <span>{note.wordCount} words</span>
         <span>{note.readingMinutes} min read</span>
       </div>
