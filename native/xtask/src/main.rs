@@ -56,7 +56,6 @@ enum BuildTarget {
     WebTechnical,
     Viewer,
     Native,
-    Cloudflare,
 }
 
 #[derive(Debug, Args)]
@@ -259,7 +258,6 @@ impl Xtask {
                 "-p",
                 "castle-cli",
             ]),
-            BuildTarget::Cloudflare => self.node(["apps/web/scripts/build-cloudflare.mjs"]),
         }
     }
 

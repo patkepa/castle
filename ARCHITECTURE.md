@@ -44,11 +44,10 @@ desktop navigation cannot drift.
 ## Repository automation
 
 Cross-workspace automation lives in the `xtask` crate and is exposed through
-`cargo xtask`. The root npm scripts are compatibility aliases, apart from the
-Node-first Cloudflare build that bootstraps Rust when necessary. Each application
-and shared package continues to own its low-level npm commands. This keeps CI,
-local development, generation, validation, and release workflows on the same
-typed command surface.
+`cargo xtask`. Each application and shared package continues to own its
+low-level npm commands. The only root build script is the Node-first Cloudflare
+hook that bootstraps Rust when necessary. This keeps CI, local development,
+generation, validation, and release workflows on the same typed command surface.
 
 ## Snapshot builds
 

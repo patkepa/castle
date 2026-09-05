@@ -14,7 +14,10 @@ test("reports stale coordinates in check mode without requiring geocoding", () =
   assert.equal(personLocationCheckError(0, 0), null);
   assert.match(personLocationCheckError(2, 1), /2 locations need geocoding/);
   assert.match(personLocationCheckError(2, 1), /1 obsolete coordinate block needs removal/);
-  assert.match(personLocationCheckError(2, 1), /sync:person-locations/);
+  assert.match(
+    personLocationCheckError(2, 1),
+    /cargo xtask sync-person-locations/,
+  );
 });
 
 const personSource = `---

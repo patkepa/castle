@@ -41,6 +41,21 @@ const rootDependencies = {
   ...rootPackage.dependencies,
   ...rootPackage.devDependencies,
 };
+const allowedRootScripts = new Map([
+  ["build:cloudflare", "node apps/web/scripts/build-cloudflare.mjs"],
+]);
+for (const scriptName of Object.keys(rootPackage.scripts ?? {})) {
+  if (!allowedRootScripts.has(scriptName)) {
+    violations.push(
+      `package.json: root script ${scriptName} must move to xtask or its owning workspace`,
+    );
+  }
+}
+for (const [scriptName, command] of allowedRootScripts) {
+  if (rootPackage.scripts?.[scriptName] !== command) {
+    violations.push(`package.json: ${scriptName} must remain the Node-first Rust bootstrap`);
+  }
+}
 for (const applicationDependency of [
   "@astrojs/react",
   "@blueprintjs/icons",
@@ -58,18 +73,6 @@ for (const applicationDependency of [
   if (rootDependencies[applicationDependency]) {
     violations.push(
       `package.json: application dependency ${applicationDependency} belongs to its workspace`,
-    );
-  }
-}
-
-for (const [scriptName, command] of [
-  ["generate:content", "cargo xtask generate content desktop"],
-  ["generate:content:web", "cargo xtask generate content web"],
-]) {
-  const script = rootPackage.scripts?.[scriptName] ?? "";
-  if (script !== command) {
-    violations.push(
-      `package.json: ${scriptName} must delegate repository orchestration to ${command}`,
     );
   }
 }

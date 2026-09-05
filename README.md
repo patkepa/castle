@@ -43,9 +43,9 @@ The first command writes an ignored, deny-by-default public snapshot under
 referenced raster image assets with approved extensions. Astro consumes that
 snapshot and writes the deployable site to `apps/web/dist`.
 
-Run `cargo xtask --help` to see all repository tasks. The root npm scripts are
-compatibility aliases (apart from the Cargo-bootstrapping Cloudflare build);
-application-specific npm commands remain in their owning workspace.
+Run `cargo xtask --help` to see all repository tasks. Application-specific npm
+commands remain in their owning workspace. The root `build:cloudflare` npm hook
+is intentionally Node-first so it can bootstrap Rust in the build environment.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package boundaries and the migration
 plan.
