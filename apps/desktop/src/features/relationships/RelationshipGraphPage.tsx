@@ -639,7 +639,7 @@ function RelationshipSplitView({
   people: GraphNode[];
   query: string;
   onQueryChange: (value: string) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   activeCategories: Set<string>;
   onCategoryChange: (categoryId: string) => void;
   leftView: PeopleBrowserView;
@@ -657,7 +657,7 @@ function RelationshipSplitView({
   hoveredNodeId: string | null;
   onHoverNode: (nodeId: string | null) => void;
   simulationRunning: boolean;
-  graphCanvasRef: React.RefObject<ForceGraphHandle>;
+  graphCanvasRef: React.RefObject<ForceGraphHandle | null>;
   getInitialPosition: (node: GraphNode) => { x: number; y: number };
   onToggleSimulation: () => void;
   onPersonSaved: () => void;

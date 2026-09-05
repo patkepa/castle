@@ -42,7 +42,7 @@ export function RelationshipHierarchyView({
   people: GraphNode[];
   query: string;
   onQueryChange: (value: string) => void;
-  inputRef: RefObject<HTMLInputElement>;
+  inputRef: RefObject<HTMLInputElement | null>;
   activeCategories: Set<string>;
   onCategoryChange: (categoryId: string) => void;
   selectedNode: GraphNode | null;

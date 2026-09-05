@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: path.resolve(import.meta.dirname, ".."),
-  plugins: [react()],
+  plugins: [react({ compiler: true })],
   css: {
     preprocessorOptions: {
       scss: {

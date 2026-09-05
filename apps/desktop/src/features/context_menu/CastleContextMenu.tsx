@@ -200,11 +200,11 @@ export function ContextMenuTarget({
   menu,
   onOpen,
 }: {
-  children: ReactElement<ContextTargetProps>;
+  children: ReactElement;
   menu?: CastleContextMenuModel;
   onOpen?: () => void;
 }) {
-  const child = Children.only(children);
+  const child = Children.only(children) as ReactElement<ContextTargetProps>;
   const context = useContext(CastleContextMenuContext);
   if (!context || !menu) return child;
 

@@ -423,7 +423,7 @@ test("renders generic embeds and native direct video playback", () => {
         videos,
       }),
   );
-  assert.match(directMarkup, /<video playsinline=""/);
+  assert.match(directMarkup, /<video playsInline=""/);
   assert.doesNotMatch(directMarkup, /<video autoplay=""/);
   assert.match(directMarkup, /class="media-default-skin media-default-skin--video playlist-videojs-skin"/);
   assert.match(directMarkup, /cdn\.example\.com\/video\.webm\?token=signed/);

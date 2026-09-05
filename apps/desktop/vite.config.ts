@@ -23,7 +23,11 @@ const nativeGeneratorPath = path.join(
 export default defineConfig({
   base: process.env.CASTLE_BASE_PATH ?? "/",
   root: desktopRoot,
-  plugins: [react(), videoPosterMetadata(), reloadGeneratedContent()],
+  plugins: [
+    react({ compiler: true }),
+    videoPosterMetadata(),
+    reloadGeneratedContent(),
+  ],
   resolve: {
     dedupe: ["react", "react-dom", "react-router-dom"],
   },

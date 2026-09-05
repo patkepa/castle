@@ -547,7 +547,7 @@ function NoteToolbar({
   isPinned: boolean;
   next?: Note;
   note: Note;
-  noteBodyRef: RefObject<HTMLDivElement>;
+  noteBodyRef: RefObject<HTMLDivElement | null>;
   noteMarkdown: string;
   noteReady: boolean;
   noteSidebarOpen: boolean;

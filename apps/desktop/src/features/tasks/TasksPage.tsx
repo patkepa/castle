@@ -1068,7 +1068,7 @@ function TaskToolbar({
   onViewModeChange,
 }: {
   query: string;
-  searchInputRef: RefObject<HTMLInputElement>;
+  searchInputRef: RefObject<HTMLInputElement | null>;
   viewMode: TaskViewMode;
   mutationLabel: string;
   onQueryChange: (query: string) => void;

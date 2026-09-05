@@ -20,7 +20,7 @@ export function GraphSearchBar({
 }: {
   query: string;
   matchCount: number;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   onQueryChange: (value: string) => void;
   onSubmit: () => void;
   controlsOpen: boolean;
