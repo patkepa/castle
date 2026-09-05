@@ -62,18 +62,14 @@ for (const applicationDependency of [
   }
 }
 
-for (const [scriptName, profile, output] of [
-  ["generate:content", "desktop", "apps/desktop/public"],
-  ["generate:content:web", "public", "apps/web/public"],
+for (const [scriptName, command] of [
+  ["generate:content", "cargo xtask generate content desktop"],
+  ["generate:content:web", "cargo xtask generate content web"],
 ]) {
   const script = rootPackage.scripts?.[scriptName] ?? "";
-  if (
-    !script.includes("-p castle-snapshot") ||
-    !script.includes(`--profile ${profile}`) ||
-    !script.includes(`--public ${output}`)
-  ) {
+  if (script !== command) {
     violations.push(
-      `package.json: ${scriptName} must explicitly generate the ${profile} snapshot at ${output}`,
+      `package.json: ${scriptName} must delegate repository orchestration to ${command}`,
     );
   }
 }

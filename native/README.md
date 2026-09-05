@@ -26,6 +26,15 @@ cargo run --release --manifest-path native/Cargo.toml -p castle-snapshot -- buil
 cargo test --manifest-path native/Cargo.toml --workspace
 ```
 
+For repository workflows, use the root-level xtask interface instead:
+
+```sh
+cargo xtask build native
+cargo xtask validate-library
+cargo xtask generate content web
+cargo xtask test native
+```
+
 The commands read their default library and repository paths from
 `CONFIGURATION.md` and publish fetchable artifacts below the selected app's
 `public/generated/`. `castle-cli build` writes a full desktop snapshot;

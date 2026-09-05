@@ -24,24 +24,28 @@ Castle requires Node.js, npm, and Rust 1.90 or newer.
 
 ```sh
 npm install
-npm run dev
+cargo xtask dev
 ```
 
-`npm run dev` generates a web snapshot and starts Astro. Use
-`npm run dev:desktop` for Electron or `npm run dev:viewer` for a browser preview
-of the desktop renderer.
+`cargo xtask dev` generates a web snapshot and starts Astro. Use
+`cargo xtask dev desktop` for Electron or `cargo xtask dev viewer` for a browser
+preview of the desktop renderer.
 
 Production builds follow the same two-stage pipeline:
 
 ```sh
-npm run generate:content:web
-npm run build --workspace @castle/web
+cargo xtask generate content web
+cargo xtask build web
 ```
 
 The first command writes an ignored, deny-by-default public snapshot under
 `apps/web/public`. Its catalog omits desktop-only metadata and it includes only
 referenced raster image assets with approved extensions. Astro consumes that
 snapshot and writes the deployable site to `apps/web/dist`.
+
+Run `cargo xtask --help` to see all repository tasks. The root npm scripts are
+compatibility aliases (apart from the Cargo-bootstrapping Cloudflare build);
+application-specific npm commands remain in their owning workspace.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package boundaries and the migration
 plan.

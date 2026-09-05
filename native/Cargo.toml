@@ -1,5 +1,5 @@
 [workspace]
-members = ["castle_contracts", "castle_core", "castle_index", "castle_mcp", "castle_cli", "castle_snapshot"]
+members = ["castle_contracts", "castle_core", "castle_index", "castle_mcp", "castle_cli", "castle_snapshot", "xtask"]
 resolver = "2"
 
 [workspace.package]

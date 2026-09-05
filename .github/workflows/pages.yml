@@ -37,7 +37,7 @@ jobs:
           CASTLE_BASE_PATH: /${{ github.event.repository.name }}/
           CASTLE_OUT_DIR: dist-pages
           VITE_CASTLE_ROUTER: hash
-        run: npm run build:web
+        run: cargo xtask build web
 
       - name: Build technical documentation demo
         env:
@@ -45,7 +45,7 @@ jobs:
           CASTLE_OUT_DIR: dist-pages/technical
           CASTLE_SITE_VARIANT: technical
           VITE_CASTLE_ROUTER: hash
-        run: npm run build:web:technical
+        run: cargo xtask build web-technical
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

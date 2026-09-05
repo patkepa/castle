@@ -41,12 +41,21 @@ in `packages/content`. Both renderers own their presentation components, but
 they resolve Castle content paths through `@castle/content` so static and
 desktop navigation cannot drift.
 
+## Repository automation
+
+Cross-workspace automation lives in the `xtask` crate and is exposed through
+`cargo xtask`. The root npm scripts are compatibility aliases, apart from the
+Node-first Cloudflare build that bootstraps Rust when necessary. Each application
+and shared package continues to own its low-level npm commands. This keeps CI,
+local development, generation, validation, and release workflows on the same
+typed command surface.
+
 ## Snapshot builds
 
-The root snapshot scripts pass an explicit profile to `castle-snapshot`:
-`generate:content:web` writes the public projection to `apps/web/public`, while
-`generate:content` writes the full desktop-viewer snapshot to
-`apps/desktop/public`. Astro uses the ignored generated subdirectories
+The xtask snapshot commands pass an explicit profile to `castle-snapshot`:
+`cargo xtask generate content web` writes the public projection to
+`apps/web/public`, while `cargo xtask generate content desktop` writes the full
+desktop-viewer snapshot to `apps/desktop/public`. Astro uses the ignored generated subdirectories
 alongside its tracked deployment metadata as `publicDir` and reads its catalog
 during prerendering. Each Castle note gets a real static
 `/note/.../index.html` route.
