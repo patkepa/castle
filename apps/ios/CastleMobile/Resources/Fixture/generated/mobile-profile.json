@@ -1,0 +1,13 @@
+{
+  "profile": "mobileReadOnly",
+  "contractVersion": 2,
+  "resources": [
+    "assets",
+    "bootstrap",
+    "catalog",
+    "contentAssets",
+    "domains",
+    "notes",
+    "searchIndex"
+  ]
+}

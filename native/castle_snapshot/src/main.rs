@@ -41,6 +41,7 @@ struct Paths {
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum SnapshotProfileArgument {
     Desktop,
+    MobileReadOnly,
     Public,
 }
 
@@ -48,6 +49,7 @@ impl From<SnapshotProfileArgument> for SnapshotProfile {
     fn from(value: SnapshotProfileArgument) -> Self {
         match value {
             SnapshotProfileArgument::Desktop => Self::Desktop,
+            SnapshotProfileArgument::MobileReadOnly => Self::MobileReadOnly,
             SnapshotProfileArgument::Public => Self::Public,
         }
     }
@@ -120,5 +122,17 @@ mod tests {
         .unwrap();
         let Command::Build(paths) = cli.command;
         assert!(matches!(paths.profile, SnapshotProfileArgument::Public));
+    }
+
+    #[test]
+    fn accepts_the_mobile_read_only_profile() {
+        let cli =
+            Cli::try_parse_from(["castle-snapshot", "build", "--profile", "mobile-read-only"])
+                .unwrap();
+        let Command::Build(paths) = cli.command;
+        assert!(matches!(
+            paths.profile,
+            SnapshotProfileArgument::MobileReadOnly
+        ));
     }
 }

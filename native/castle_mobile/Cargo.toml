@@ -1,0 +1,20 @@
+[package]
+name = "castle-mobile"
+description = "Swift-facing bridge for Castle's read-only mobile application"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+castle-contracts = { path = "../castle_contracts" }
+castle-core = { path = "../castle_core" }
+thiserror.workspace = true
+uniffi.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -92,6 +92,7 @@ pub struct SnapshotOptions {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SnapshotProfile {
     Desktop,
+    MobileReadOnly,
     Public,
 }
 
@@ -105,6 +106,14 @@ struct PublicSnapshotPolicy {
     note_fields: &'static [&'static str],
     note_content_fields: &'static [&'static str],
     asset_extensions: &'static [&'static str],
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MobileSnapshotPolicy {
+    profile: &'static str,
+    contract_version: u32,
+    resources: &'static [&'static str],
 }
 
 #[derive(Debug, Clone, Default)]
@@ -133,6 +142,7 @@ fn write_snapshot_contents(
 ) -> Result<()> {
     match options.profile {
         SnapshotProfile::Desktop => write_desktop_snapshot_contents(compilation, options),
+        SnapshotProfile::MobileReadOnly => write_mobile_snapshot_contents(compilation, options),
         SnapshotProfile::Public => write_public_snapshot_contents(compilation, options),
     }
 }
@@ -157,6 +167,10 @@ fn write_desktop_snapshot_contents(
     let public_policy = generated_root.join("public-profile.json");
     if public_policy.try_exists()? {
         fs::remove_file(public_policy)?;
+    }
+    let mobile_policy = generated_root.join("mobile-profile.json");
+    if mobile_policy.try_exists()? {
+        fs::remove_file(mobile_policy)?;
     }
     let mut desired_notes = HashSet::new();
     for resource in note_resources {
@@ -206,6 +220,76 @@ fn write_desktop_snapshot_contents(
     sync_assets(compilation, &options.public_root)?;
     sync_sheets(compilation, &options.public_root)?;
     sync_canvases(compilation, &options.public_root)?;
+    Ok(())
+}
+
+fn write_mobile_snapshot_contents(
+    compilation: &CastleCompilation,
+    options: &SnapshotOptions,
+) -> Result<()> {
+    const MOBILE_RESOURCES: &[&str] = &[
+        "assets",
+        "bootstrap",
+        "catalog",
+        "contentAssets",
+        "domains",
+        "notes",
+        "searchIndex",
+    ];
+
+    let knowledge_base = &compilation.knowledge_base;
+    if let Some(generated_path) = &options.generated_path {
+        if let Some(parent) = generated_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        atomic_write(generated_path, &serde_json::to_vec_pretty(knowledge_base)?)?;
+    }
+
+    let generated_root = options.public_root.join("generated");
+    let notes_root = generated_root.join("notes");
+    fs::create_dir_all(&notes_root)?;
+    remove_if_exists(&generated_root.join("public-profile.json"))?;
+    remove_if_exists(&generated_root.join("relationship-graph.json"))?;
+    remove_if_exists(&generated_root.join("sheets"))?;
+    remove_if_exists(&generated_root.join("canvases"))?;
+
+    let mut desired_notes = HashSet::new();
+    for resource in &compilation.note_resources {
+        let relative = resource
+            .content_path
+            .trim_start_matches('/')
+            .trim_start_matches("generated/");
+        desired_notes.insert(relative.to_owned());
+        atomic_write(
+            &generated_root.join(relative),
+            &serde_json::to_vec(&resource.content)?,
+        )?;
+    }
+    remove_stale_note_resources(&notes_root, &desired_notes)?;
+    atomic_write(
+        &generated_root.join("search-index.json"),
+        &serde_json::to_vec(&compilation.search_index)?,
+    )?;
+    atomic_write(
+        &generated_root.join("bootstrap.json"),
+        &serde_json::to_vec(&bootstrap_knowledge_base(knowledge_base))?,
+    )?;
+    write_domain_resources(knowledge_base, &generated_root)?;
+    sync_assets(compilation, &options.public_root)?;
+    atomic_write(
+        &generated_root.join("mobile-profile.json"),
+        &serde_json::to_vec_pretty(&MobileSnapshotPolicy {
+            profile: "mobileReadOnly",
+            contract_version: CONTENT_CONTRACT_VERSION,
+            resources: MOBILE_RESOURCES,
+        })?,
+    )?;
+    // Catalog is the mobile publication pointer. Publish it only after every
+    // resource it references is durable.
+    atomic_write(
+        &generated_root.join("catalog.json"),
+        &serde_json::to_vec(knowledge_base)?,
+    )?;
     Ok(())
 }
 
@@ -320,6 +404,18 @@ fn remove_private_generated_resources(generated_root: &Path) -> Result<()> {
         } else {
             fs::remove_file(entry.path())?;
         }
+    }
+    Ok(())
+}
+
+fn remove_if_exists(path: &Path) -> Result<()> {
+    if !path.try_exists()? {
+        return Ok(());
+    }
+    if path.is_dir() {
+        fs::remove_dir_all(path)?;
+    } else {
+        fs::remove_file(path)?;
     }
     Ok(())
 }
@@ -1284,6 +1380,65 @@ mod tests {
             policy["assetExtensions"],
             serde_json::json!(PUBLIC_ASSET_EXTENSIONS)
         );
+    }
+
+    #[test]
+    fn mobile_snapshot_keeps_reading_resources_and_removes_desktop_only_output() {
+        let root = tempfile::tempdir().unwrap();
+        let library = root.path().join("library");
+        let public = root.path().join("public");
+        fs::create_dir_all(library.join("notes")).unwrap();
+        fs::create_dir_all(public.join("generated/sheets")).unwrap();
+        fs::create_dir_all(public.join("generated/canvases")).unwrap();
+        fs::write(library.join("notes/hello.md"), "# Hello\n\nMobile body.\n").unwrap();
+        fs::write(
+            public.join("generated/relationship-graph.json"),
+            b"desktop-only",
+        )
+        .unwrap();
+        fs::write(public.join("generated/public-profile.json"), b"public-only").unwrap();
+
+        let compilation = compile_library(
+            &CompileOptions::new(&library, root.path())
+                .with_repository_history(crate::RepositoryHistoryPolicy::Unavailable),
+        )
+        .unwrap();
+        write_snapshot(
+            &compilation,
+            &SnapshotOptions {
+                generated_path: None,
+                public_root: public.clone(),
+                profile: SnapshotProfile::MobileReadOnly,
+            },
+        )
+        .unwrap();
+
+        for relative in [
+            "generated/bootstrap.json",
+            "generated/catalog.json",
+            "generated/manifest.json",
+            "generated/mobile-profile.json",
+            "generated/search-index.json",
+        ] {
+            assert!(public.join(relative).is_file(), "{relative} is missing");
+        }
+        let note = &compilation.knowledge_base.notes[0];
+        assert!(
+            public
+                .join(note.content_path.trim_start_matches('/'))
+                .is_file()
+        );
+        assert!(!public.join("generated/public-profile.json").exists());
+        assert!(!public.join("generated/relationship-graph.json").exists());
+        assert!(!public.join("generated/sheets").exists());
+        assert!(!public.join("generated/canvases").exists());
+
+        let policy: Value = serde_json::from_slice(
+            &fs::read(public.join("generated/mobile-profile.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(policy["profile"], "mobileReadOnly");
+        assert_eq!(policy["contractVersion"], CONTENT_CONTRACT_VERSION);
     }
 
     fn assert_object_keys(value: &Value, expected: &[&str]) {

@@ -127,7 +127,15 @@ pub struct CompileOptions {
     pub library_root: PathBuf,
     pub repository_root: PathBuf,
     pub source_overrides: BTreeMap<PathBuf, String>,
-    cached_stash_created_at: Option<HashMap<String, String>>,
+    repository_history: RepositoryHistoryPolicy,
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum RepositoryHistoryPolicy {
+    #[default]
+    GitCommand,
+    Provided(HashMap<String, String>),
+    Unavailable,
 }
 
 impl CompileOptions {
@@ -136,15 +144,20 @@ impl CompileOptions {
             library_root: library_root.into(),
             repository_root: repository_root.into(),
             source_overrides: BTreeMap::new(),
-            cached_stash_created_at: None,
+            repository_history: RepositoryHistoryPolicy::GitCommand,
         }
+    }
+
+    pub fn with_repository_history(mut self, policy: RepositoryHistoryPolicy) -> Self {
+        self.repository_history = policy;
+        self
     }
 
     pub(crate) fn with_cached_stash_created_at(
         mut self,
         stash_created_at: &HashMap<String, String>,
     ) -> Self {
-        self.cached_stash_created_at = Some(stash_created_at.clone());
+        self.repository_history = RepositoryHistoryPolicy::Provided(stash_created_at.clone());
         self
     }
 }
@@ -160,10 +173,13 @@ pub fn compile_library(options: &CompileOptions) -> Result<CastleCompilation> {
         .repository_root
         .canonicalize()
         .unwrap_or_else(|_| options.repository_root.clone());
-    let stash_created_at = options
-        .cached_stash_created_at
-        .clone()
-        .unwrap_or_else(|| load_stash_created_at(&library_root, &repository_root));
+    let stash_created_at = match &options.repository_history {
+        RepositoryHistoryPolicy::GitCommand => {
+            load_stash_created_at(&library_root, &repository_root)
+        }
+        RepositoryHistoryPolicy::Provided(created_at) => created_at.clone(),
+        RepositoryHistoryPolicy::Unavailable => HashMap::new(),
+    };
     let mut notes = Vec::new();
 
     for section in &SECTIONS {
@@ -1555,6 +1571,30 @@ mod tests {
         assert_eq!(
             created.get("stash/zażółć.md").map(String::as_str),
             Some("2026-08-02T10:00:00.000Z")
+        );
+    }
+
+    #[test]
+    fn accepts_repository_history_without_invoking_git() {
+        let root = tempfile::tempdir().unwrap();
+        let library = root.path().join("library");
+        fs::create_dir_all(library.join("stash")).unwrap();
+        fs::write(library.join("stash/idea.md"), "# Portable idea\n").unwrap();
+        let timestamp = "2024-01-02T03:04:05.000Z";
+
+        let compilation = compile_library(
+            &CompileOptions::new(&library, root.path()).with_repository_history(
+                RepositoryHistoryPolicy::Provided(HashMap::from([(
+                    "stash/idea.md".to_owned(),
+                    timestamp.to_owned(),
+                )])),
+            ),
+        )
+        .unwrap();
+
+        assert_eq!(
+            compilation.knowledge_base.notes[0].created_at.as_deref(),
+            Some(timestamp)
         );
     }
 

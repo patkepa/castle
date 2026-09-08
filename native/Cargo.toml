@@ -1,5 +1,5 @@
 [workspace]
-members = ["castle_contracts", "castle_core", "castle_index", "castle_mcp", "castle_cli", "castle_snapshot", "xtask"]
+members = ["castle_contracts", "castle_core", "castle_index", "castle_mcp", "castle_cli", "castle_mobile", "castle_snapshot", "xtask"]
 resolver = "2"
 
 [workspace.package]
@@ -23,8 +23,10 @@ serde_yaml = "0.9.34"
 schemars = "1.2.2"
 sha2 = "0.10.9"
 tempfile = "3.27.0"
+thiserror = "2.0.20"
 tokio = { version = "=1.52.3", features = ["macros", "rt"] }
 turso = { version = "=0.8.0-pre.2", default-features = false, features = ["fts"] }
+uniffi = { version = "0.32.0", default-features = false }
 unicode-normalization = "0.1.25"
 walkdir = "2.5.0"
 jsonschema = { version = "0.49.3", default-features = false }

@@ -24,3 +24,7 @@ apps/desktop/src/generated/content.json
 
 # Rust
 native/target/
+
+# Generated Apple project and local build state
+apps/ios/CastleMobile.xcodeproj/
+apps/ios/DerivedData/

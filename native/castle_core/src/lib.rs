@@ -20,7 +20,8 @@ mod structured_mutations;
 mod tasks;
 
 pub use compiler::{
-    CompileOptions, compile_changed_sources, compile_library, compile_source_overrides,
+    CompileOptions, RepositoryHistoryPolicy, compile_changed_sources, compile_library,
+    compile_source_overrides,
 };
 pub use configuration::{CastleConfiguration, load_castle_configuration};
 pub use index_projection::{
