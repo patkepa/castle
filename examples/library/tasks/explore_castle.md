@@ -24,4 +24,4 @@ pinned: true
 - [x] Search for a note
 - [ ] Try the relationship views
 - [ ] Open the project board
-- [ ] Inspect the example Canvas and spreadsheet
+- [ ] Inspect the example Canvas

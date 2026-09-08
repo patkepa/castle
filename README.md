@@ -46,6 +46,8 @@ snapshot and writes the deployable site to `apps/web/dist`.
 Run `cargo xtask --help` to see all repository tasks. Application-specific npm
 commands remain in their owning workspace. The root `build:cloudflare` npm hook
 is intentionally Node-first so it can bootstrap Rust in the build environment.
+Use `cargo xtask clean` to remove generated application output, caches, and the
+Rust target directory.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package boundaries and the migration
 plan.

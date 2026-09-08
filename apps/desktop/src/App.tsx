@@ -14,7 +14,6 @@ import {
   Route,
   Routes,
   useLocation,
-  useParams,
   useNavigate,
 } from "react-router-dom";
 import { FolderPage } from "./components/FolderPage";
@@ -24,7 +23,6 @@ import { NotFoundPage } from "./components/NotFoundPage";
 import { ViewSettingsMenu } from "./components/ViewSettingsMenu";
 import { SidebarNoteCollection } from "./components/SidebarNoteCollection";
 import {
-  createFolderRoute,
   decodeFolderPath,
   getNoteDirectory,
   getPinnedFolder,
@@ -909,7 +907,6 @@ function CastleApp({
             />
           }
         />
-        <Route path="/section/:sectionId" element={<LegacySectionRedirect />} />
         <Route
           path="/note/*"
           element={
@@ -1197,14 +1194,7 @@ function createBreadcrumb(
     );
   }
 
-  const section = knowledgeBase.sections.find(
-    (candidate) => pathname === `/section/${candidate.id}`,
-  );
-  return section ? (
-    <span>{section.label}</span>
-  ) : (
-    <span>The Castle</span>
-  );
+  return <span>The Castle</span>;
 }
 
 const sheetsLibrarySection: SectionSummary = {
@@ -1218,15 +1208,6 @@ function addSheetsLibrarySection(sections: readonly SectionSummary[]) {
   return sections.some((section) => section.id === sheetsLibrarySection.id)
     ? [...sections]
     : [...sections, sheetsLibrarySection];
-}
-
-function LegacySectionRedirect() {
-  const { sectionId } = useParams();
-  return sectionId ? (
-    <Navigate replace to={createFolderRoute(sectionId)} />
-  ) : (
-    <Navigate replace to="/library" />
-  );
 }
 
 function RouteLoading({ label }: { label: string }) {

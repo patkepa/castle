@@ -14,6 +14,5 @@ export default defineConfig({
   },
   build: {
     assetsDir: "app-assets",
-    sourcemap: true,
   },
 });

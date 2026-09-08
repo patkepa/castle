@@ -18,7 +18,7 @@ tags: [data, review]
 
 # Review the Atlas data model
 
-Compare the spreadsheet with the
+Compare the current observations with the
 [[projects/neighborhood_atlas/data_dictionary|data dictionary]].
 
 - [ ] Test a record with incomplete evidence

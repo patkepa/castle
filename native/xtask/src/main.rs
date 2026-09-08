@@ -1,5 +1,6 @@
 use std::env;
 use std::ffi::{OsStr, OsString};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
@@ -21,6 +22,8 @@ enum Task {
     Check,
     /// Check application and package dependency boundaries.
     CheckArchitecture,
+    /// Remove generated build output and caches.
+    Clean(CleanArgs),
     /// Start a development server or the desktop application.
     Dev(DevArgs),
     /// Deploy the private Cloudflare web application.
@@ -62,6 +65,20 @@ enum BuildTarget {
 struct BuildArgs {
     #[arg(value_enum, default_value_t)]
     target: BuildTarget,
+}
+
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
+enum CleanTarget {
+    #[default]
+    All,
+    Generated,
+    Native,
+}
+
+#[derive(Debug, Args)]
+struct CleanArgs {
+    #[arg(value_enum, default_value_t)]
+    target: CleanTarget,
 }
 
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
@@ -196,16 +213,19 @@ impl Xtask {
             Task::Build(args) => self.build(args.target),
             Task::Check => self.check(),
             Task::CheckArchitecture => self.node(["scripts/check-architecture.mjs"]),
+            Task::Clean(args) => self.clean(args.target),
             Task::Dev(args) => self.dev(args.target),
             Task::Deploy => self.deploy(),
             Task::Format(args) => self.format(args.check),
             Task::Generate(args) => self.generate(args.command.unwrap_or(GenerateTask::All)),
             Task::Lint(args) => self.lint(args.target),
             Task::PackageDesktop => {
+                self.build(BuildTarget::Native)?;
                 self.generate(GenerateTask::All)?;
                 self.npm(["run", "package", "--workspace", "@castle/desktop"])
             }
             Task::MakeDesktop => {
+                self.build(BuildTarget::Native)?;
                 self.generate(GenerateTask::All)?;
                 self.npm(["run", "make", "--workspace", "@castle/desktop"])
             }
@@ -268,6 +288,49 @@ impl Xtask {
         self.build(BuildTarget::Viewer)?;
         self.build(BuildTarget::Web)?;
         self.typecheck()
+    }
+
+    fn clean(&self, target: CleanTarget) -> Result<()> {
+        if matches!(target, CleanTarget::All | CleanTarget::Generated) {
+            self.clean_generated()?;
+        }
+        if matches!(target, CleanTarget::All | CleanTarget::Native) {
+            self.cargo(["clean", "--manifest-path", "native/Cargo.toml"])?;
+        }
+        Ok(())
+    }
+
+    fn clean_generated(&self) -> Result<()> {
+        for relative in [
+            ".vite",
+            ".wrangler",
+            "gpui/target",
+            "out",
+            "apps/desktop/.vite",
+            "apps/desktop/dist",
+            "apps/desktop/out",
+            "apps/desktop/public/assets",
+            "apps/desktop/public/content-assets",
+            "apps/desktop/public/generated",
+            "apps/web/.astro",
+            "apps/web/.castle",
+            "apps/web/apps",
+            "apps/web/dist",
+            "apps/web/dist-pages",
+            "apps/web/dist-technical",
+            "apps/web/public/assets",
+            "apps/web/public/content-assets",
+            "apps/web/public/generated",
+        ] {
+            let path = self.root.join(relative);
+            if !path.exists() {
+                continue;
+            }
+            fs::remove_dir_all(&path)
+                .with_context(|| format!("failed to remove {}", path.display()))?;
+            println!("Removed {relative}");
+        }
+        Ok(())
     }
 
     fn dev(&self, target: DevTarget) -> Result<()> {

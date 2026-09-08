@@ -12,7 +12,7 @@ Participants: [[people/alex_morgan|Alex]], [[people/jamie_chen|Jamie]],
 ## Decisions
 
 - Use “signals” rather than ratings.
-- Keep consent visible in the spreadsheet and export.
+- Keep consent visible in the working dataset and export.
 - Treat the graph as an exploration surface, not an org chart.
 - Test the prototype at [[events/2026/atlas_open_studio|the open studio]].
 

@@ -31,9 +31,9 @@ and switch between relation and “known from” grouping.
 
 ## Other workspaces
 
-Open **Canvas** for a visual project map and **Sheets** for a small formula-based
-Atlas tracker. The Playlists section demonstrates embedded video discovery,
-while Shortcuts shows internal and external destinations grouped into tabs.
+Open **Canvas** for a visual project map. The Playlists section demonstrates
+embedded video discovery, while Shortcuts shows internal and external
+destinations grouped into tabs.
 
 Return to [[notes/welcome|Welcome to the Neighborhood Atlas]] whenever you want
 a fresh trail through the graph.

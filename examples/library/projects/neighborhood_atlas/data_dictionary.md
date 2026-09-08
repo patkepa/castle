@@ -13,6 +13,6 @@ tags: [data, atlas, reference]
 | Consent | public summary | Controls what can leave the private library |
 | Confidence | emerging | Keeps uncertainty visible |
 
-Noah uses these fields in the example spreadsheet. The vocabulary reflects the
-tradeoffs in [[notes/design_principles|Design principles]] and should change as
-the [[projects/neighborhood_atlas/research_plan|research plan]] produces better questions.
+These fields define the Atlas's working data model. The vocabulary reflects
+the tradeoffs in [[notes/design_principles|Design principles]] and should change
+as the [[projects/neighborhood_atlas/research_plan|research plan]] produces better questions.

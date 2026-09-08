@@ -21,7 +21,7 @@ The Atlas is a living guide to the places, rituals, and people that make a
 neighborhood feel like home. It combines walking interviews, small observations,
 and invitations to participate—without turning community life into a scorecard.
 
-![A community table with a hand-drawn map, notes, pencils, and flowers at an open studio](assets/images/atlas-open-studio.png)
+![A community table with a hand-drawn map, notes, pencils, and flowers at an open studio](assets/images/atlas-open-studio.webp)
 
 *An imagined open-studio table: the Atlas is made through conversation, not
 extraction.*

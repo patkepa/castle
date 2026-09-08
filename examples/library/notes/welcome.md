@@ -15,12 +15,12 @@ pinned: true
 This publish-safe library follows a fictional group building a living guide to
 their neighborhood. It is deliberately connected: people know one another,
 projects create tasks and events, journal entries point back to decisions, and
-the same ideas appear in the Canvas and spreadsheet workspaces.
+the same ideas appear in the Canvas workspace.
 
 > Start with the [[wiki/castle_feature_tour|Castle feature tour]], then open the
 > relationship graph and follow any person or note link that catches your eye.
 
-## Four good places to begin
+## Six good places to begin
 
 | Explore | What it demonstrates |
 | --- | --- |
@@ -54,7 +54,7 @@ which observations should shape the next public draft.
 - [ ] Search for “serendipity”
 - [ ] Open the backlinks panel on this note
 - [ ] Switch the Library between list and graph views
-- [ ] Open the example Canvas and spreadsheet
+- [ ] Open the example Canvas
 
 ### A small code block
 

@@ -24,10 +24,6 @@ shortcuts:
     description: Explore the visual Atlas project map
     href: /canvas
   - category: Make
-    label: Sheets
-    description: Open the formula-based observation tracker
-    href: /sheets
-  - category: Make
     label: Stash
     description: Review captured ideas, references, and voice-note follow-ups
     href: /browse/stash

@@ -38,10 +38,4 @@ export default tseslint.config(
       "react-hooks/rules-of-hooks": "error",
     },
   },
-  {
-    files: ["apps/desktop/src/components/graph/ForceGraphCanvas.tsx"],
-    rules: {
-      "react-hooks/exhaustive-deps": "off",
-    },
-  },
 );
