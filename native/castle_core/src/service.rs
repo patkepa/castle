@@ -37,8 +37,8 @@ use crate::structured_mutations::{
     update_task_placement_markdown, update_task_status_markdown,
 };
 use crate::{
-    CastleCompilation, CompileOptions, IndexProjection, SnapshotOptions, build_index_projection,
-    compile_library, write_snapshot,
+    CastleCompilation, CompileOptions, IndexProjection, SnapshotOptions, SnapshotProfile,
+    build_index_projection, compile_library, write_snapshot,
 };
 
 #[derive(Debug, Clone)]
@@ -118,6 +118,7 @@ impl CastleService {
             SnapshotOptions {
                 generated_path: None,
                 public_root: self.cache_root.join("public"),
+                profile: SnapshotProfile::Desktop,
             },
         )
     }
@@ -1036,6 +1037,7 @@ fn write_service_snapshot(compilation: &CastleCompilation, cache_root: &Path) ->
         &SnapshotOptions {
             generated_path: None,
             public_root: cache_root.join("public"),
+            profile: SnapshotProfile::Desktop,
         },
     )
 }

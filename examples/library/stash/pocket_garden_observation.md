@@ -5,7 +5,7 @@ tags: [inbox, observation, fieldwork]
 
 # Pocket garden observation
 
-![An unbranded audio recorder, headphones, pencil, and note card on a wooden bench](assets/images/voice-note-capture.png)
+![An unbranded audio recorder, headphones, pencil, and note card on a wooden bench](assets/images/voice-note-capture.webp)
 
 Tall grasses create a quiet corner without a wall. Ask Maya whether the visual
 language can represent *degrees of invitation* rather than activity categories.

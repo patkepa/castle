@@ -1,0 +1,17 @@
+[package]
+name = "castle-snapshot"
+description = "Application snapshot builder for Castle's desktop and static web targets"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "castle-snapshot"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+castle-core = { path = "../castle_core" }
+clap.workspace = true

@@ -19,10 +19,6 @@ shortcuts:
     label: Data dictionary
     description: See the working language used by the Neighborhood Atlas project
     href: /note/projects/neighborhood_atlas/data_dictionary
-  - category: Castle
-    label: Project repository
-    description: View Castle source and documentation on GitHub
-    href: https://github.com/patkepa/castle
 ---
 
 # Reference shortcuts

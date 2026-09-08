@@ -6,12 +6,15 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
-      ".vite/**",
-      "dist/**",
+      "**/.astro/**",
+      "**/.vite/**",
+      "**/dist/**",
+      "**/dist-*/**",
+      "**/out/**",
       "native/target/**",
       "node_modules/**",
-      "public/generated/**",
-      "src/generated/**",
+      "apps/*/public/generated/**",
+      "apps/desktop/src/generated/**",
     ],
   },
   js.configs.recommended,
@@ -29,15 +32,10 @@ export default tseslint.config(
     },
     rules: {
       "@typescript-eslint/no-empty-object-type": "off",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "no-regex-spaces": "off",
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/rules-of-hooks": "error",
-    },
-  },
-  {
-    files: ["src/components/graph/ForceGraphCanvas.tsx"],
-    rules: {
-      "react-hooks/exhaustive-deps": "off",
     },
   },
 );
