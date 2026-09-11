@@ -1,4 +1,4 @@
-name: Deploy demos to GitHub Pages
+name: Deploy Castle to GitHub Pages
 
 on:
   push:
@@ -32,20 +32,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build personal demo
+      - name: Build Castle web application
         env:
           CASTLE_BASE_PATH: /${{ github.event.repository.name }}/
-          CASTLE_OUT_DIR: dist-pages
           VITE_CASTLE_ROUTER: hash
-        run: cargo xtask build web
-
-      - name: Build technical documentation demo
-        env:
-          CASTLE_BASE_PATH: /${{ github.event.repository.name }}/technical/
-          CASTLE_OUT_DIR: dist-pages/technical
-          CASTLE_SITE_VARIANT: technical
-          VITE_CASTLE_ROUTER: hash
-        run: cargo xtask build web-technical
+        run: cargo xtask build viewer
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -53,7 +44,7 @@ jobs:
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: apps/web/dist-pages
+          path: apps/desktop/dist
 
   deploy:
     if: github.event_name != 'pull_request'
