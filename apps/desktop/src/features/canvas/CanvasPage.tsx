@@ -412,7 +412,7 @@ function CanvasLibraryRail({
           <p className="canvas-library-empty">
             {desktopAvailable
               ? "Create the first .canvas file in this library."
-              : "This Cloudflare build does not contain any published library canvases."}
+              : "This read-only snapshot does not contain any published library canvases."}
           </p>
         ) : null}
       </div>

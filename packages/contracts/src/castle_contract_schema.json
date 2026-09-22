@@ -1283,7 +1283,7 @@
       ]
     },
     "PublicCatalogNote": {
-      "description": "The deny-by-default catalog projection consumed by the read-only Astro app.\nSource metadata, personal sidebars, tags, status, and timestamps stay in the\ndesktop snapshot unless they are explicitly added to this contract.",
+      "description": "The deny-by-default catalog projection for read-only public snapshots.\nSource metadata, personal sidebars, tags, status, and timestamps stay in the\ndesktop snapshot unless they are explicitly added to this contract.",
       "type": "object",
       "properties": {
         "id": {

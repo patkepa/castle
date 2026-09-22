@@ -9,11 +9,10 @@ This workspace is the content backend for Castle.
 - `castle_cli` exposes `build`, `validate`, and the persistent Electron
   `daemon`.
 - `castle_snapshot` emits application build inputs and requires an explicit
-  `desktop` or `public` profile.
+  profile.
 
-The static and desktop targets deliberately use the same compiler. Markdown in
-`library/` remains the source of truth; no database or daemon-owned source state
-is introduced.
+The desktop application uses the canonical compiler. Markdown in `library/`
+remains the source of truth; no database or daemon-owned source state is introduced.
 
 ## Commands
 
@@ -22,7 +21,6 @@ Run these from `castle/`:
 ```sh
 cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- build
 cargo run --release --manifest-path native/Cargo.toml -p castle-cli -- validate
-cargo run --release --manifest-path native/Cargo.toml -p castle-snapshot -- build --profile public --public apps/web/public
 cargo test --manifest-path native/Cargo.toml --workspace
 ```
 
@@ -31,7 +29,7 @@ For repository workflows, use the root-level xtask interface instead:
 ```sh
 cargo xtask build native
 cargo xtask validate-library
-cargo xtask generate content web
+cargo xtask generate content desktop
 cargo xtask test native
 ```
 

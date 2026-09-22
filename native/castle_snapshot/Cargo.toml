@@ -1,6 +1,6 @@
 [package]
 name = "castle-snapshot"
-description = "Application snapshot builder for Castle's desktop and static web targets"
+description = "Application snapshot builder for Castle applications"
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true

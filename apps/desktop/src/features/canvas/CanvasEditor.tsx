@@ -1579,7 +1579,7 @@ export function CanvasEditor({
           <strong>{fileName}</strong>
         </div>
         {readOnly ? (
-          <span className="canvas-readonly-notice">Read-only Cloudflare snapshot</span>
+          <span className="canvas-readonly-notice">Read-only snapshot</span>
         ) : (
           <div className="canvas-history-controls">
             <ToolbarButton icon="undo" label="Undo" disabled={past.length === 0} onClick={undo} />

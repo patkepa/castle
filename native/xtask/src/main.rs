@@ -26,8 +26,6 @@ enum Task {
     Clean(CleanArgs),
     /// Start a development server or the desktop application.
     Dev(DevArgs),
-    /// Deploy the private Cloudflare web application.
-    Deploy,
     /// Format the Rust workspace.
     Format(FormatArgs),
     /// Generate contracts, snapshots, and application assets.
@@ -55,8 +53,6 @@ enum Task {
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum BuildTarget {
     #[default]
-    Web,
-    WebTechnical,
     Viewer,
     Native,
 }
@@ -84,7 +80,6 @@ struct CleanArgs {
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum DevTarget {
     #[default]
-    Web,
     Viewer,
     Desktop,
 }
@@ -124,8 +119,6 @@ enum GenerateTask {
 enum ContentTarget {
     #[default]
     Desktop,
-    Web,
-    WebTechnical,
 }
 
 #[derive(Debug, Args)]
@@ -151,7 +144,6 @@ struct LintArgs {
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum PreviewTarget {
     #[default]
-    Web,
     Viewer,
 }
 
@@ -215,7 +207,6 @@ impl Xtask {
             Task::CheckArchitecture => self.node(["scripts/check-architecture.mjs"]),
             Task::Clean(args) => self.clean(args.target),
             Task::Dev(args) => self.dev(args.target),
-            Task::Deploy => self.deploy(),
             Task::Format(args) => self.format(args.check),
             Task::Generate(args) => self.generate(args.command.unwrap_or(GenerateTask::All)),
             Task::Lint(args) => self.lint(args.target),
@@ -253,15 +244,6 @@ impl Xtask {
 
     fn build(&self, target: BuildTarget) -> Result<()> {
         match target {
-            BuildTarget::Web => {
-                self.sync_person_locations(true)?;
-                self.generate_content(ContentTarget::Web)?;
-                self.npm(["run", "build", "--workspace", "@castle/web"])
-            }
-            BuildTarget::WebTechnical => {
-                self.generate_content(ContentTarget::WebTechnical)?;
-                self.npm(["run", "build", "--workspace", "@castle/web"])
-            }
             BuildTarget::Viewer => {
                 self.sync_person_locations(true)?;
                 self.generate(GenerateTask::Contracts)?;
@@ -286,7 +268,6 @@ impl Xtask {
         self.lint(LintTarget::All)?;
         self.test(TestTarget::All)?;
         self.build(BuildTarget::Viewer)?;
-        self.build(BuildTarget::Web)?;
         self.typecheck()
     }
 
@@ -312,15 +293,6 @@ impl Xtask {
             "apps/desktop/public/assets",
             "apps/desktop/public/content-assets",
             "apps/desktop/public/generated",
-            "apps/web/.astro",
-            "apps/web/.castle",
-            "apps/web/apps",
-            "apps/web/dist",
-            "apps/web/dist-pages",
-            "apps/web/dist-technical",
-            "apps/web/public/assets",
-            "apps/web/public/content-assets",
-            "apps/web/public/generated",
         ] {
             let path = self.root.join(relative);
             if !path.exists() {
@@ -335,10 +307,6 @@ impl Xtask {
 
     fn dev(&self, target: DevTarget) -> Result<()> {
         match target {
-            DevTarget::Web => {
-                self.generate_content(ContentTarget::Web)?;
-                self.npm(["run", "dev", "--workspace", "@castle/web"])
-            }
             DevTarget::Viewer => {
                 self.generate(GenerateTask::All)?;
                 self.npm(["run", "dev", "--workspace", "@castle/desktop"])
@@ -348,19 +316,6 @@ impl Xtask {
                 self.npm(["run", "start", "--workspace", "@castle/desktop"])
             }
         }
-    }
-
-    fn deploy(&self) -> Result<()> {
-        self.node(["apps/web/scripts/check-private-deploy.mjs"])?;
-        self.check()?;
-        self.npm([
-            "exec",
-            "--",
-            "wrangler",
-            "deploy",
-            "--config",
-            "apps/web/wrangler.jsonc",
-        ])
     }
 
     fn format(&self, check: bool) -> Result<()> {
@@ -405,12 +360,6 @@ impl Xtask {
     fn generate_content(&self, target: ContentTarget) -> Result<()> {
         let (profile, public, extra): (&str, &str, &[&str]) = match target {
             ContentTarget::Desktop => ("desktop", "apps/desktop/public", &[]),
-            ContentTarget::Web => ("public", "apps/web/public", &[]),
-            ContentTarget::WebTechnical => (
-                "public",
-                "apps/web/public",
-                &["--library", "examples/technical-docs", "--repository", "."],
-            ),
         };
         let mut args = vec![
             "run",
@@ -464,7 +413,6 @@ impl Xtask {
 
     fn preview(&self, target: PreviewTarget) -> Result<()> {
         let workspace = match target {
-            PreviewTarget::Web => "@castle/web",
             PreviewTarget::Viewer => "@castle/desktop",
         };
         self.npm(["run", "preview", "--workspace", workspace])

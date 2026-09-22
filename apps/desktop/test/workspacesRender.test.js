@@ -142,12 +142,12 @@ test("renders the managed Sheets browser and spreadsheet back navigation", () =>
   assert.match(previewMarkup, /Budget/);
   assert.match(previewMarkup, /Notes/);
   assert.match(previewMarkup, /Total/);
-  assert.match(previewMarkup, /Read-only Cloudflare snapshot/);
+  assert.match(previewMarkup, /Read-only snapshot/);
   assert.doesNotMatch(previewMarkup, /Replace file/);
   assert.doesNotMatch(previewMarkup, />Apply</);
 });
 
-test("renders a Cloudflare canvas snapshot without editing controls", () => {
+test("renders a read-only canvas snapshot without editing controls", () => {
   const markup = render(createElement(CanvasEditor, {
     autoSave: false,
     data: { nodes: [], edges: [] },
@@ -160,7 +160,7 @@ test("renders a Cloudflare canvas snapshot without editing controls", () => {
     onSave: async () => {},
   }));
 
-  assert.match(markup, /Read-only Cloudflare snapshot/);
+  assert.match(markup, /Read-only snapshot/);
   assert.match(markup, /Download \.canvas/);
   assert.doesNotMatch(markup, /aria-label="Canvas tools"/);
   assert.doesNotMatch(markup, /aria-label="Save canvas"/);

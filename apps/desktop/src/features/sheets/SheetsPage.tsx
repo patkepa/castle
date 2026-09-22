@@ -1042,7 +1042,7 @@ export function SpreadsheetPanel({
           ) : null}
           <i aria-hidden="true" />
           <span>{readOnly
-            ? "Read-only Cloudflare snapshot"
+            ? "Read-only snapshot"
             : "Double-click to edit · Paste tabular data · SUM, AVERAGE, MIN, MAX, COUNT, ROUND"}</span>
         </div>
       </footer>

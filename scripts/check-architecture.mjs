@@ -7,7 +7,6 @@ const rootPackage = JSON.parse(readFileSync(path.join(repositoryRoot, "package.j
 const desktopRoot = path.join(repositoryRoot, "apps", "desktop");
 const sourceRoot = path.join(desktopRoot, "src");
 const featuresRoot = path.join(sourceRoot, "features");
-const webSourceRoot = path.join(repositoryRoot, "apps", "web", "src");
 const appsRoot = path.join(repositoryRoot, "apps");
 const packagesRoot = path.join(repositoryRoot, "packages");
 const electronRoot = path.join(desktopRoot, "electron");
@@ -25,7 +24,6 @@ for (const obsoletePath of [
   "test",
   "schemas",
   "wrangler.jsonc",
-  "scripts/build-cloudflare.mjs",
   "scripts/check-private-deploy.mjs",
   "scripts/generate-blueprint-icon-loader.mjs",
   "scripts/generate-contracts.mjs",
@@ -41,28 +39,16 @@ const rootDependencies = {
   ...rootPackage.dependencies,
   ...rootPackage.devDependencies,
 };
-const allowedRootScripts = new Map([
-  ["build:cloudflare", "node apps/web/scripts/build-cloudflare.mjs"],
-]);
 for (const scriptName of Object.keys(rootPackage.scripts ?? {})) {
-  if (!allowedRootScripts.has(scriptName)) {
-    violations.push(
-      `package.json: root script ${scriptName} must move to xtask or its owning workspace`,
-    );
-  }
-}
-for (const [scriptName, command] of allowedRootScripts) {
-  if (rootPackage.scripts?.[scriptName] !== command) {
-    violations.push(`package.json: ${scriptName} must remain the Node-first Rust bootstrap`);
-  }
+  violations.push(
+    `package.json: root script ${scriptName} must move to xtask or its owning workspace`,
+  );
 }
 for (const applicationDependency of [
-  "@astrojs/react",
   "@blueprintjs/icons",
   "@electron-forge/cli",
   "@electron/fuses",
   "@vitejs/plugin-react",
-  "astro",
   "electron",
   "leaflet",
   "react",
@@ -122,30 +108,6 @@ for (const filePath of sourceFiles(sourceRoot)) {
     ) {
       violations.push(
         `${relativePath}: feature ${owner} cannot reach into feature ${targetOwner} (${importPath})`,
-      );
-    }
-  }
-}
-
-for (const filePath of sourceFiles(webSourceRoot)) {
-  const relativePath = path.relative(repositoryRoot, filePath).replaceAll(path.sep, "/");
-  const source = readFileSync(filePath, "utf8");
-  const imports = importedPaths(source);
-
-  if (source.includes("window.castleDesktop")) {
-    violations.push(`${relativePath}: the static web app cannot access the desktop bridge`);
-  }
-
-  for (const importPath of imports) {
-    if (importPath === "electron" || importPath.startsWith("electron/")) {
-      violations.push(`${relativePath}: the static web app cannot import Electron`);
-      continue;
-    }
-    if (!importPath.startsWith(".")) continue;
-    const targetPath = path.resolve(path.dirname(filePath), importPath);
-    if (isWithin(targetPath, electronRoot) || isWithin(targetPath, sourceRoot)) {
-      violations.push(
-        `${relativePath}: the static web app must depend on snapshot contracts or shared packages (${importPath})`,
       );
     }
   }

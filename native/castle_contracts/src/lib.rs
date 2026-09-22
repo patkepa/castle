@@ -447,7 +447,7 @@ pub struct PublicSectionSummary {
     pub count: usize,
 }
 
-/// The deny-by-default catalog projection consumed by the read-only Astro app.
+/// The deny-by-default catalog projection for read-only public snapshots.
 /// Source metadata, personal sidebars, tags, status, and timestamps stay in the
 /// desktop snapshot unless they are explicitly added to this contract.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
